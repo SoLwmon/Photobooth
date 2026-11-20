@@ -1,0 +1,9 @@
+# Booth data: guests' photos, session videos, settings — never commit
+data/
+# Downloaded tools and dependencies
+node_modules/
+tools/*.exe
+# OS / editor clutter
+.DS_Store
+Thumbs.db
+*.log

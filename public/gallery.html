@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScareBooth — Gallery</title>
+  <link rel="icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    body { overflow: auto; padding: 24px 28px 60px; }
+    h1 { margin: 0; font-size: 48px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 22px; margin-top: 24px; }
+    .s { background: #120a0b; border: 1px solid var(--line); padding: 12px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+    .s img { width: 100%; aspect-ratio: 1/3; object-fit: cover; background: #000; }
+    .s .ph { aspect-ratio: 1/3; display: grid; place-items: center; color: var(--ash); font-size: 14px; background: #0a0607; }
+    .s .meta { font-size: 12px; color: var(--ash); word-break: break-all; }
+    .s a { color: #ffb3b8; }
+    .print { display: flex; gap: 6px; }
+    .print select { flex: 0 0 64px; background: #070405; color: var(--text); border: 1px solid #3a2a2b; font-size: 16px; padding: 6px; }
+    .print .btn { flex: 1; font-size: 15px; min-height: 40px; padding: 6px 10px; }
+    .status { font-size: 13px; min-height: 1.2em; color: #f3d6a0; }
+    .status.ok { color: #9fd8a2; }
+    p { color: var(--ash); }
+  </style>
+</head>
+<body class="grain">
+  <h1 class="logo">Gallery</h1>
+  <p id="dir"></p>
+  <div class="grid" id="grid"></div>
+  <script src="/js/common.js"></script>
+  <script>
+    const { $, $$, api, esc } = SB;
+    Promise.all([api('/api/sessions'), api('/api/settings')]).then(([r, st]) => {
+      const layout = st.settings.print.layout;
+      $('#dir').textContent = `${r.sessions.length} sessions · stored in ${r.sessionsDir}` +
+        ` · reprints go to the Windows default printer (layout: ${layout === '4x6-double' ? 'two strips per 4×6 sheet' : layout === '2x6' ? '2×6 strip' : 'one strip per 4×6 sheet'})`;
+      const opts = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+      $('#grid').innerHTML = r.sessions.map(s => `
+        <div class="s" data-id="${esc(s.id)}">
+          ${s.strip ? `<a href="${s.strip}" target="_blank"><img loading="lazy" src="${s.strip}"></a>` : `<div class="ph">No strip (session not finished)</div>`}
+          <div class="meta">${esc(s.id)}<br>${s.photos} photos · ${s.reactions} reactions · printed ${s.prints}${s.strip ? ` · <a href="${s.strip}?download=1">download</a>` : ''}${s.video ? ` · <a href="${s.video}" target="_blank">▶ video</a>` : ''}</div>
+          ${s.strip ? `<div class="print"><select aria-label="Copies">${opts}</select><button class="btn">🖨 Print</button></div><div class="status"></div>` : ''}
+        </div>`).join('') || '<p>No sessions yet.</p>';
+    }).catch(e => $('#dir').textContent = e.message);
+
+    document.addEventListener('click', async (e) => {
+      const b = e.target.closest('.print .btn'); if (!b) return;
+      const card = b.closest('.s'), status = $('.status', card);
+      const copies = Number($('select', card).value);
+      b.disabled = true; status.className = 'status'; status.textContent = 'Sending to printer…';
+      try {
+        await api('/api/admin/reprint', { json: { sessionId: card.dataset.id, copies } });
+        status.className = 'status ok'; status.textContent = `Sent ${copies} ${copies === 1 ? 'copy' : 'copies'} to the printer.`;
+      } catch (err) { status.textContent = err.message; }
+      finally { setTimeout(() => (b.disabled = false), 2000); }
+    });
+  </script>
+</body>
+</html>

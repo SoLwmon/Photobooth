@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScareBooth — Display</title>
+  <link rel="icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/display.css">
+  <link rel="stylesheet" href="/css/romance.css">
+  <link rel="stylesheet" href="/css/portrait.css">
+</head>
+<body class="grain cam-off">
+  <!-- Camera stage: live feed + scare composited in the same box -->
+  <div id="stage">
+    <video id="cam" autoplay muted playsinline disablepictureinpicture></video>
+    <canvas id="scare"></canvas>
+  </div>
+
+  <div class="vignette"></div>
+  <div class="love" id="love"></div>
+  <div class="florals tl"></div><div class="florals tr"></div><div class="florals bl"></div><div class="florals br"></div>
+  <div id="fog"><i></i><i></i></div>
+
+  <div id="ui">
+    <div id="brand" class="logo" data-title>Till Death Do Us Part</div>
+
+    <section id="attract" class="layer">
+      <div class="attract-card">
+        <div class="logo big" data-title>Till Death Do Us Part</div>
+        <p class="type tagline" id="attractLine"></p>
+        <div class="eyebrow cta"><span class="ember"></span> Press Start on the iPad to begin <span class="ember"></span></div>
+      </div>
+    </section>
+
+    <section id="lower" class="layer">
+      <div class="lower-card">
+        <div class="eyebrow shotno" id="shotNo">Question 1 of 4</div>
+        <div class="type prompt" id="promptText">…</div>
+        <div class="answer"><div class="answer-bar"><i id="answerFill"></i></div><div class="eyebrow answer-label">Answer now…</div></div>
+        <div class="type pose-line">Now strike a pose!</div>
+      </div>
+    </section>
+
+    <section id="countdown" class="layer"><div class="ring"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92"/><path class="heart-ring" pathLength="578" d="M100,182 C42,140 10,106 10,68 C10,36 34,14 62,14 C80,14 93,24 100,38 C107,24 120,14 138,14 C166,14 190,36 190,68 C190,106 158,140 100,182 Z"/></svg><div class="num" id="cdNum">3</div></div></section>
+
+    <section id="choose" class="layer">
+      <div class="choose-wrap">
+        <div class="eyebrow" data-t="chooseEyebrow"></div>
+        <h2 class="type">Choose your favourite scream on the iPad</h2>
+        <div class="choose-preview"><img id="choosePreview" alt=""></div>
+        <div class="filmstrip" id="filmstrip"></div>
+      </div>
+    </section>
+
+    <section id="developing" class="layer"><div class="dev"><div class="type"><span data-t="developing"></span><span class="dots"></span></div><div class="bar"><i></i></div></div></section>
+
+    <section id="done" class="layer">
+      <div class="done-wrap">
+        <div class="done-text">
+          <div class="eyebrow" data-t="doneEyebrow"></div>
+          <h2 class="logo">Your strip is ready</h2>
+          <p class="type print-line" id="printLine"></p>
+          <div class="qrs">
+            <div class="qr" id="qrWifiBox" hidden><div class="qr-img" id="qrWifi"></div><div class="qr-cap"><b>1</b> Join Wi-Fi<br><span id="qrWifiName"></span></div></div>
+            <div class="qr" id="qrDlBox" hidden><div class="qr-img" id="qrDl"></div><div class="qr-cap"><b id="qrStep">2</b> Scan to download<br>your photos<span id="qrNote"></span></div></div>
+          </div>
+        </div>
+        <img id="stripImg" alt="Photo strip">
+      </div>
+    </section>
+
+    <div id="testBadge">TEST SCARE</div>
+    <div id="previewBadge">OVERLAY PLACEMENT PREVIEW — adjust in the operator console</div>
+  </div>
+
+  <div id="flash"></div>
+
+  <div id="sys">
+    <div id="sysOffline" class="sysmsg">Reconnecting to the ScareBooth server…</div>
+    <div id="sysCamera" class="syscard"><h3>Camera problem</h3><p id="sysCameraMsg"></p><button class="btn small" id="retryCam">Retry camera</button></div>
+    <div id="sysScare" class="sysmsg warn"></div>
+    <button id="sysAudio" class="sysmsg clickable">🔇 Click here once to enable scare sound</button>
+    <div id="sysDemoted" class="syscard"><h3>Another display took over</h3><p>A newer display window is now driving the booth. Close this one, or reload it to take control back.</p><button class="btn small" onclick="location.reload()">Take control</button></div>
+  </div>
+
+  <script src="/js/vendor/qrcode.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/scare-renderer.js"></script>
+  <script src="/js/demo-camera.js"></script>
+  <script src="/js/strip.js"></script>
+  <script src="/vendor/face-api/face-api.js"></script>
+  <script src="/js/best-shot.js"></script>
+  <script src="/js/display.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScareBooth</title>
+  <link rel="icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    body { overflow: auto; display: grid; place-items: center; min-height: 100%; background: radial-gradient(ellipse at 50% 0%, #2a0a0e, #070405 60%); }
+    .wrap { text-align: center; padding: 40px 24px; max-width: 900px; }
+    .logo { font-size: clamp(64px, 11vw, 130px); margin: 10px 0 30px; }
+    .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+    .links a { text-decoration: none; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+    .links small { font-size: 13px; letter-spacing: 0.04em; text-transform: none; opacity: 0.75; }
+    p { color: var(--ash); font-size: 17px; line-height: 1.5; }
+  </style>
+</head>
+<body class="grain">
+  <div class="wrap">
+    <div class="eyebrow">Local horror photobooth</div>
+    <div class="logo">ScareBooth</div>
+    <div class="links">
+      <a class="btn" href="/controller">iPad controller<small>Open this on the guest iPad</small></a>
+      <a class="btn ghost" href="/display">Booth display<small>PC monitor only</small></a>
+      <a class="btn ghost" href="/admin">Operator console<small>PC only</small></a>
+    </div>
+    <p>Everything runs on this PC — no internet or accounts needed.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <!-- "The Pale Lady" — original ScareBooth built-in scare. Transparent background. -->
+  <defs>
+    <radialGradient id="skin" cx="50%" cy="40%" r="60%">
+      <stop offset="0" stop-color="#ece8df"/>
+      <stop offset="0.55" stop-color="#c9c6bb"/>
+      <stop offset="1" stop-color="#6f6f68"/>
+    </radialGradient>
+    <radialGradient id="socket" cx="50%" cy="45%" r="55%">
+      <stop offset="0" stop-color="#000"/>
+      <stop offset="0.6" stop-color="#0b0606"/>
+      <stop offset="1" stop-color="#3a3532" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mouth" cx="50%" cy="40%" r="60%">
+      <stop offset="0" stop-color="#000"/>
+      <stop offset="0.75" stop-color="#140303"/>
+      <stop offset="1" stop-color="#4a1010"/>
+    </radialGradient>
+    <radialGradient id="pupil">
+      <stop offset="0" stop-color="#fffbe8"/>
+      <stop offset="0.5" stop-color="#e8e2c8" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#e8e2c8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="dress" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1716"/>
+      <stop offset="1" stop-color="#050404"/>
+    </linearGradient>
+    <linearGradient id="fadeDown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.8" stop-color="#fff"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <mask id="bottomFade"><rect width="800" height="1000" fill="url(#fadeDown)"/></mask>
+    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.05" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6"/>
+    </filter>
+    <filter id="skinTex" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="t"/>
+      <feColorMatrix in="t" type="matrix" values="0 0 0 0 0.25  0 0 0 0 0.24  0 0 0 0 0.22  0 0 0 0.28 0" result="tc"/>
+      <feComposite in="tc" in2="SourceGraphic" operator="in" result="tex"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="tex"/></feMerge>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="softer" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="glow" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+
+  <g mask="url(#bottomFade)">
+    <!-- hair mass behind -->
+    <g filter="url(#rough)">
+      <path fill="#070505" d="M400 70 C250 70 170 170 160 300 C150 430 130 560 90 700 C60 810 40 900 30 1000 L770 1000 C760 900 740 810 710 700 C670 560 650 430 640 300 C630 170 550 70 400 70 Z"/>
+      <path fill="#0d0a09" d="M230 200 C200 380 190 560 140 760 L200 1000 L250 760 C260 560 250 380 270 220 Z"/>
+      <path fill="#0d0a09" d="M570 200 C600 380 610 560 660 760 L600 1000 L550 760 C540 560 550 380 530 220 Z"/>
+    </g>
+
+
+    <!-- neck -->
+    <path fill="#a9a69c" d="M350 560 C350 650 345 720 330 780 L470 780 C455 720 450 650 450 560 Z"/>
+    <path fill="#000" opacity="0.35" filter="url(#soft)" d="M350 600 C360 650 380 700 400 720 C420 700 440 650 450 600 Z"/>
+
+    <!-- shoulders / dress -->
+    <path fill="url(#dress)" filter="url(#rough)" d="M110 1000 C130 850 220 770 340 735 C380 750 420 750 460 735 C580 770 670 850 690 1000 Z"/>
+    <!-- face -->
+    <g filter="url(#skinTex)">
+      <path fill="url(#skin)" d="M400 150 C300 150 255 240 258 350 C262 470 300 580 345 640 C370 672 385 690 400 692 C415 690 430 672 455 640 C500 580 538 470 542 350 C545 240 500 150 400 150 Z"/>
+    </g>
+    <!-- cheek hollows & shading -->
+    <g filter="url(#softer)" opacity="0.55">
+      <ellipse cx="318" cy="500" rx="34" ry="70" fill="#4d4a44"/>
+      <ellipse cx="482" cy="500" rx="34" ry="70" fill="#4d4a44"/>
+      <ellipse cx="400" cy="200" rx="120" ry="40" fill="#6b6860"/>
+    </g>
+    <!-- veins -->
+    <g fill="none" stroke="#3d4a55" stroke-width="2.2" opacity="0.5" stroke-linecap="round">
+      <path d="M370 190 C365 215 375 235 368 262 M368 230 C355 240 350 250 346 262"/>
+      <path d="M440 200 C448 225 436 240 444 270"/>
+      <path d="M296 380 C285 410 292 430 286 455"/>
+    </g>
+
+    <!-- eye sockets -->
+    <g>
+      <ellipse cx="345" cy="345" rx="58" ry="66" fill="url(#socket)" filter="url(#soft)"/>
+      <ellipse cx="455" cy="345" rx="58" ry="66" fill="url(#socket)" filter="url(#soft)"/>
+      <ellipse cx="345" cy="350" rx="38" ry="44" fill="#000"/>
+      <ellipse cx="455" cy="350" rx="38" ry="44" fill="#000"/>
+      <!-- black tear streaks -->
+      <g fill="#050303" opacity="0.85" filter="url(#glow)">
+        <path d="M330 380 C328 430 336 470 332 520 C340 470 344 430 344 385 Z"/>
+        <path d="M352 385 C352 420 356 445 355 470 C362 445 362 420 362 388 Z"/>
+        <path d="M462 382 C464 440 456 480 462 540 C470 480 476 440 474 386 Z"/>
+      </g>
+      <!-- pinpoint pupils -->
+      <circle cx="350" cy="352" r="10" fill="url(#pupil)"/>
+      <circle cx="350" cy="352" r="3.2" fill="#fffef4"/>
+      <circle cx="450" cy="352" r="10" fill="url(#pupil)"/>
+      <circle cx="450" cy="352" r="3.2" fill="#fffef4"/>
+    </g>
+
+    <!-- nose -->
+    <path d="M392 430 C388 455 384 470 392 478 M408 430 C412 455 416 470 408 478" stroke="#57534b" stroke-width="4" fill="none" opacity="0.6"/>
+    <ellipse cx="392" cy="478" rx="6" ry="4" fill="#1a1414"/>
+    <ellipse cx="408" cy="478" rx="6" ry="4" fill="#1a1414"/>
+
+    <!-- stretched open mouth -->
+    <path fill="#2a0b0b" filter="url(#soft)" d="M355 530 C360 520 440 520 445 530 C455 590 440 660 400 672 C360 660 345 590 355 530 Z"/>
+    <path fill="url(#mouth)" d="M362 532 C370 525 430 525 438 532 C446 590 432 650 400 660 C368 650 354 590 362 532 Z"/>
+    <g fill="#d9d3c2" opacity="0.9">
+      <path d="M372 534 l6 16 l6 -16 Z"/>
+      <path d="M392 532 l5 13 l5 -13 Z"/>
+      <path d="M412 533 l6 15 l6 -15 Z"/>
+      <path d="M380 652 l5 -12 l5 12 Z"/>
+      <path d="M410 652 l5 -12 l5 12 Z"/>
+    </g>
+
+    <!-- front hair strands over face -->
+    <g filter="url(#rough)" fill="#060404">
+      <path d="M400 90 C330 95 280 150 262 240 C250 300 258 380 250 470 C262 400 285 330 300 270 C320 200 350 150 400 140 Z"/>
+      <path d="M400 90 C470 95 520 150 538 240 C550 300 542 380 550 470 C538 400 515 330 500 270 C480 200 450 150 400 140 Z"/>
+      <path d="M300 160 C290 260 300 330 296 420 C306 340 312 260 318 170 Z"/>
+      <path d="M488 160 C502 250 496 330 506 430 C490 340 486 260 476 170 Z"/>
+      <path d="M352 140 C336 220 330 280 336 320 C342 270 352 210 366 150 Z"/>
+    </g>
+    <!-- loose wisps -->
+    <g fill="none" stroke="#080606" stroke-width="3" opacity="0.8">
+      <path d="M270 300 C262 420 272 560 250 700"/>
+      <path d="M530 300 C540 420 528 560 552 700"/>
+      <path d="M340 160 C330 240 340 300 330 380"/>
+    </g>
+  </g>
+</svg>

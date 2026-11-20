@@ -1,0 +1,152 @@
+body { background: #000; cursor: default; }
+body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+
+#stage { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+#cam, #scare { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#cam { object-fit: fill; background: #000; }
+#stage.mirror #cam { transform: scaleX(-1); }
+#scare { pointer-events: none; }
+
+/* fog band hugging the bottom edge — never over faces */
+#fog { position: fixed; left: 0; right: 0; bottom: 0; height: 26vh; pointer-events: none; overflow: hidden; opacity: 0.55; mask-image: linear-gradient(to top, #000 30%, transparent); -webkit-mask-image: linear-gradient(to top, #000 30%, transparent); }
+#fog i { position: absolute; bottom: -10vh; width: 200vw; height: 40vh; left: -50vw; background: radial-gradient(ellipse at 30% 60%, rgba(160,150,150,0.22), transparent 60%), radial-gradient(ellipse at 70% 70%, rgba(120,100,105,0.2), transparent 55%); animation: fogDrift 48s linear infinite alternate; }
+#fog i + i { animation-duration: 70s; animation-direction: alternate-reverse; opacity: 0.7; }
+@keyframes fogDrift { from { transform: translateX(-12vw); } to { transform: translateX(12vw); } }
+
+#ui { position: fixed; inset: 0; pointer-events: none; }
+#brand { position: absolute; left: 3vw; top: 3vh; font-size: clamp(28px, 3.2vw, 56px); opacity: 0.9; transition: opacity 0.6s; }
+body.phase-idle #brand { opacity: 0; }
+
+.layer { position: absolute; inset: 0; display: flex; opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s, filter 0.5s ease; filter: blur(6px); }
+.layer.on { opacity: 1; visibility: visible; transition: opacity 0.5s ease, visibility 0s, filter 0.5s ease; filter: none; }
+
+/* attract */
+#attract { align-items: flex-end; justify-content: center; padding-bottom: 7vh; background: linear-gradient(to top, rgba(5,2,3,0.92) 0%, rgba(5,2,3,0.35) 38%, transparent 60%); }
+.attract-card { text-align: center; }
+.logo.big { font-size: clamp(64px, 9vw, 170px); }
+.tagline { font-size: clamp(20px, 2vw, 36px); color: var(--bone); margin: 1.2vh 0 2.4vh; opacity: 0.9; }
+.cta { font-size: clamp(14px, 1.2vw, 22px); color: var(--bone); display: inline-flex; gap: 18px; align-items: center; animation: breathe 3.4s ease-in-out infinite; }
+.ember { width: 8px; height: 8px; border-radius: 50%; background: var(--crimson-hi); box-shadow: 0 0 12px var(--crimson-hi); }
+@keyframes breathe { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+/* lower third with pose prompt — kept low so faces stay clear */
+#lower { align-items: flex-end; justify-content: center; padding-bottom: 5vh; background: linear-gradient(to top, rgba(5,2,3,0.92) 0%, rgba(5,2,3,0.55) 24%, transparent 42%); }
+.lower-card { text-align: center; max-width: 80vw; }
+.shotno, .hint, #choose .eyebrow { text-shadow: 0 0 3px #000, 0 2px 12px #000, 0 0 24px rgba(0,0,0,0.8); }
+.shotno { color: var(--crimson-hi); font-weight: 600; font-size: clamp(14px, 1.3vw, 24px); }
+.prompt { font-size: clamp(28px, 3.4vw, 64px); color: var(--bone); margin: 1vh 0 1.6vh; text-shadow: 0 4px 24px #000; line-height: 1.15; }
+.hint { font-size: clamp(12px, 1vw, 18px); }
+.hint b { color: var(--bone); font-weight: 500; }
+
+/* countdown */
+#countdown { align-items: center; justify-content: center; }
+.ring { position: relative; width: min(34vh, 34vw); height: min(34vh, 34vw); }
+.ring { --ring-glow: drop-shadow(0 0 18px rgba(224,36,47,0.6)); }
+.ring svg { position: absolute; inset: 0; opacity: 0; filter: var(--ring-glow); }
+.ring circle { fill: rgba(5,2,3,0.35); stroke: var(--crimson-hi); stroke-width: 5; }
+/* the ring / heart fades in from behind and out again together with each number */
+.ring.tick svg { animation: fadeRing 1s cubic-bezier(.25,.7,.3,1) both; }
+@keyframes fadeRing {
+  0%   { opacity: 0; transform: scale(0.55); filter: blur(14px) var(--ring-glow); }
+  32%  { opacity: 1; transform: scale(1);    filter: blur(0px) var(--ring-glow); }
+  68%  { opacity: 1; transform: scale(1.03); filter: blur(0px) var(--ring-glow); }
+  100% { opacity: 0; transform: scale(1.22); filter: blur(10px) var(--ring-glow); }
+}
+@keyframes drain { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 578; } }
+.num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-ui); font-weight: 600; color: var(--bone); font-size: min(22vh, 22vw); text-shadow: 0 0 30px rgba(224,36,47,0.8), 0 6px 0 #3a0508; }
+.num { opacity: 0; }
+.num.beat { animation: fadeNum 1s cubic-bezier(.25,.7,.3,1) both; }
+@keyframes fadeNum {
+  0%   { opacity: 0; transform: scale(0.55); filter: blur(14px); }
+  32%  { opacity: 1; transform: scale(1);    filter: blur(0); }
+  68%  { opacity: 1; transform: scale(1.03); filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.22); filter: blur(10px); }
+}
+@media (prefers-reduced-motion: reduce) { .ring.tick svg { animation: fadeNumSimple 1s ease both; } }
+@media (prefers-reduced-motion: reduce) { .num.beat { animation: fadeNumSimple 1s ease both; } @keyframes fadeNumSimple { 0%,100% { opacity: 0; } 30%,70% { opacity: 1; } } }
+
+#hold { align-items: flex-end; justify-content: center; padding-bottom: 8vh; }
+#hold .type { font-size: clamp(22px, 2.2vw, 40px); color: var(--bone); text-shadow: 0 2px 20px #000; opacity: 0.85; }
+.dots::after { content: ''; animation: dots 1.8s steps(4) infinite; }
+@keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+/* choose */
+#choose { background: rgba(5,2,3,0.82); align-items: center; justify-content: center; }
+.choose-wrap { width: 86vw; text-align: center; }
+.choose-wrap h2 { font-size: clamp(26px, 2.6vw, 48px); margin: 0.6vh 0 2.4vh; font-weight: normal; color: var(--bone); }
+.choose-preview { height: 54vh; display: flex; justify-content: center; }
+.choose-preview img { height: 100%; max-width: 100%; object-fit: contain; border: 4px solid var(--bone); box-shadow: 0 0 60px rgba(179,18,27,0.4), 0 20px 60px #000; transition: opacity 0.2s; }
+.filmstrip { display: flex; gap: 0.7vw; justify-content: center; margin-top: 3vh; }
+.filmstrip img { flex: 0 1 8vw; min-width: 0; width: 8vw; height: auto; aspect-ratio: 16/9; object-fit: cover; opacity: 0.45; border: 2px solid transparent; transition: all 0.25s; filter: grayscale(0.5); }
+.filmstrip img.sel { opacity: 1; border-color: var(--crimson-hi); transform: translateY(-6px) scale(1.08); filter: none; box-shadow: 0 0 18px rgba(224,36,47,0.6); }
+
+#developing { background: rgba(5,2,3,0.7); align-items: center; justify-content: center; }
+.dev .type { font-size: clamp(28px, 3vw, 54px); color: var(--bone); }
+.bar { margin: 3vh auto 0; width: 30vw; height: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 35%; background: var(--crimson-hi); box-shadow: 0 0 12px var(--crimson-hi); animation: bar 1.4s ease-in-out infinite; }
+@keyframes bar { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+
+#done { background: linear-gradient(90deg, rgba(5,2,3,0.92) 0%, rgba(5,2,3,0.6) 55%, rgba(5,2,3,0.9) 100%); align-items: center; justify-content: center; }
+.done-wrap { display: flex; align-items: center; gap: 6vw; }
+.done-text h2 { font-size: clamp(40px, 5vw, 96px); margin: 1vh 0; font-weight: normal; }
+.done-text p { font-size: clamp(20px, 1.8vw, 32px); color: var(--bone); }
+#stripImg { height: 88vh; transform: rotate(2.5deg); box-shadow: 0 30px 80px #000, 0 0 60px rgba(179,18,27,0.3); }
+#done.on #stripImg { animation: stripIn 1.1s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes stripIn { from { transform: translateY(12vh) rotate(-4deg); opacity: 0; filter: brightness(3) blur(6px); } to { transform: rotate(2.5deg); opacity: 1; filter: none; } }
+
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 9400; transition: opacity 0.28s ease-out; }
+#flash.hold { opacity: 1; transition: opacity 0.05s ease-in; }
+#flash.go { animation: flash 0.45s ease-out; }
+#flash.shutter { background: #000; }
+@keyframes flash { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
+
+#testBadge, #previewBadge { position: absolute; top: 3vh; right: 3vw; padding: 8px 18px; font-size: 18px; letter-spacing: 0.2em; background: var(--crimson); color: #fff; display: none; }
+body.testing #testBadge { display: block; }
+body.previewing #previewBadge { display: block; font-size: 15px; letter-spacing: 0.08em; }
+
+#sys { position: fixed; inset: 0; pointer-events: none; z-index: 9500; }
+.sysmsg { position: absolute; left: 50%; top: 2vh; transform: translateX(-50%); background: rgba(10,5,6,0.92); border: 1px solid var(--line); color: var(--bone); padding: 10px 22px; font-size: 18px; display: none; font-family: var(--font-ui); letter-spacing: 0.04em; }
+.sysmsg.on { display: block; }
+.sysmsg.warn { top: auto; bottom: 2vh; border-color: rgba(224,160,58,0.5); color: #f3d6a0; max-width: 80vw; text-align: center; }
+#sysAudio { top: auto; bottom: 2vh; left: auto; right: 2vw; transform: none; pointer-events: auto; cursor: pointer; }
+.syscard { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, 90vw); background: rgba(14,7,8,0.95); border: 1px solid rgba(224,36,47,0.5); padding: 32px 36px; display: none; pointer-events: auto; box-shadow: 0 30px 80px #000; }
+.syscard.on { display: block; }
+.syscard h3 { margin: 0 0 10px; color: var(--crimson-hi); font-size: 30px; font-weight: 500; letter-spacing: 0.04em; }
+.syscard p { font-size: 20px; line-height: 1.45; color: var(--bone); }
+
+#lower.counting .hint { visibility: hidden; }
+
+body.snap .layer { transition: none !important; filter: none !important; }
+.print-line { color: #f3d6a0 !important; min-height: 1.3em; }
+.qrs { display: flex; gap: 2.4vw; margin-top: 3vh; }
+.qr { background: rgba(10,5,6,0.85); border: 1px solid rgba(224,36,47,0.4); padding: 1.2vw; text-align: center; }
+.qr[hidden] { display: none; }
+.qr-img { width: 13vw; height: 13vw; min-width: 150px; min-height: 150px; }
+.qr-img svg { width: 100%; height: 100%; display: block; }
+.qr-cap { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 0.12em; font-size: clamp(12px, 1vw, 18px); color: var(--bone); margin-top: 1vh; line-height: 1.4; }
+.qr-cap b { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--crimson); color: #fff; margin-right: 6px; }
+.qr-cap span { text-transform: none; letter-spacing: 0.02em; color: var(--ash); }
+.qr-cap b:empty { display: none; }
+#qrNote { display: block; font-size: 0.8em; letter-spacing: 0.04em; text-transform: none; color: var(--ash); margin-top: 2px; }
+#qrNote:empty { display: none; }
+
+/* ---- camera hidden until Start is pressed (idle / warning / done). The camera keeps running in the
+   background so the session starts instantly; Test scare and overlay preview still show it. */
+#stage { transition: opacity 0.6s ease; }
+body.cam-off:not(.testing):not(.previewing) #stage { opacity: 0; }
+body.cam-off { background: radial-gradient(ellipse at 50% 40%, #2a0a0e 0%, #050203 70%); }
+body.cam-off.theme-romance, .theme-romance body.cam-off { background: radial-gradient(ellipse at 50% 40%, #fff6f9 0%, #fde1ea 60%, #f8c8d8 100%); }
+body.cam-off #attract { align-items: center; padding-bottom: 0; background: none; }
+
+/* ---- countdown sits on the camera picture itself (the scare cuts in right where it was) */
+#countdown { top: var(--stage-top, 0px); height: var(--stage-h, 100vh); bottom: auto; }
+#countdown .ring { width: min(48%, calc(var(--stage-h, 100vh) * 0.62)); height: auto; aspect-ratio: 1; }
+#countdown .num { font-size: calc(var(--stage-h, 100vh) * 0.4); }
+/* landscape: the question card sits on the lower part of the picture, so keep the heart above it */
+body:not(.portrait) #countdown { padding-bottom: 24vh; }
+body:not(.portrait) #countdown .ring { width: calc(var(--stage-h, 100vh) * 0.46); }
+body:not(.portrait) #countdown .num { font-size: calc(var(--stage-h, 100vh) * 0.3); }
+#flash.black { background: #000; }
+/* black cut before the jump scare: instant black, then the scare snaps in */
+#flash.cut.hold { transition: none; }
+#flash.cut { transition: opacity 0.07s linear; }

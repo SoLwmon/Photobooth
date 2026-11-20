@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Till Death Do Us Part — Operator console</title>
+  <link rel="icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <header class="top">
+    <div class="logo" id="consoleTitle">Till Death Do Us Part</div>
+    <div class="eyebrow">Operator console</div>
+    <div class="spacer"></div>
+    <span class="pill" id="pDisplay"><span class="dot"></span>Display</span>
+    <span class="pill" id="pCamera"><span class="dot"></span>Camera</span>
+    <span class="pill" id="pIpad"><span class="dot"></span>iPad</span>
+    <span class="pill" id="pSound"><span class="dot"></span>Sound</span>
+    <span class="pill" id="pServer"><span class="dot"></span>Server</span>
+  </header>
+
+  <main class="grid">
+    <!-- STATUS -->
+    <section class="card wide" id="statusCard">
+      <h2>Booth status</h2>
+      <div class="status-grid">
+        <div><label>Session</label><div id="stPhase" class="big">—</div><div id="stSession" class="muted"></div></div>
+        <div><label>Camera</label><div id="stCamera">—</div></div>
+        <div><label>Scare</label><div id="stScare">—</div></div>
+        <div><label>iPad address (open in Safari on the same Wi-Fi)</label><div id="stUrls" class="urls">—</div></div>
+      </div>
+      <div class="actions">
+        <button class="btn small" id="openDisplay">Open display window</button>
+        <button class="btn small ghost" data-cmd="reloadCamera">Restart camera</button>
+        <button class="btn small ghost" data-cmd="reloadDisplay">Reload display</button>
+        <button class="btn small ghost" id="cancelSession">Cancel current session</button>
+        <a class="btn small ghost" href="/gallery" target="_blank">Photo gallery</a>
+      </div>
+      <div class="log" id="log"></div>
+    </section>
+
+    <!-- SCARE -->
+    <section class="card wide" id="scareCard">
+      <h2>Scare &amp; overlay</h2>
+      <div class="scare-layout">
+        <div>
+          <div class="pv-orient" id="pvOrient">
+            <span class="muted small">Preview as</span>
+            <button class="btn small ghost" data-orient="landscape">▭ Landscape screen</button>
+            <button class="btn small ghost" data-orient="portrait">▯ Portrait screen</button>
+          </div>
+          <div class="pv-screen" id="pvScreen">
+            <div class="preview-stage" id="pvStage">
+              <video id="pvCam" autoplay muted playsinline></video>
+              <canvas id="pvScare"></canvas>
+              <div class="pv-hint">Drag to move · scroll to resize</div>
+            </div>
+            <div class="pv-screen-label">Main display (portrait)</div>
+          </div>
+          <div class="actions">
+            <button class="btn small" id="playHere">▶ Play scare here</button>
+            <button class="btn small" id="testScare">⚡ Test scare on booth</button>
+            <label class="toggle"><input type="checkbox" id="pvOnDisplay"> Show placement on booth screen</label>
+          </div>
+          <p class="muted small" id="pvSource"></p>
+          <div class="scare-perf" id="scarePerf" hidden></div>
+        </div>
+        <div class="controls">
+          <label>Active scare</label>
+          <div class="library" id="library"></div>
+          <div class="upload">
+            <label class="btn small ghost filebtn">Upload scare… <input type="file" id="scareFile" accept="image/png,image/webp,image/gif,image/svg+xml,image/jpeg,video/mp4,video/webm,.mp4,.webm,.m4v,.mov"></label>
+            <div class="progress" id="upProgress"><i></i></div>
+            <p class="muted small">Transparent PNG/WebP/SVG images, transparent <b>WebM (VP9 alpha)</b> video, or any MP4/WebM with a green background (turn on chroma key). Ordinary MP4s have no transparency.</p>
+          </div>
+
+          <div class="split">
+            <div><label>Horizontal position <output data-for="placement.x"></output></label><input type="range" min="-0.2" max="1.2" step="0.005" data-profile="placement.x"></div>
+            <div><label>Vertical position <output data-for="placement.y"></output></label><input type="range" min="-0.2" max="1.2" step="0.005" data-profile="placement.y"></div>
+            <div><label>Size (height vs frame) <output data-for="placement.scale"></output></label><input type="range" min="0.1" max="2.5" step="0.01" data-profile="placement.scale"></div>
+            <div><label>Edge softness <output data-for="edgeFeather"></output></label><input type="range" min="0" max="0.3" step="0.005" data-profile="edgeFeather"></div>
+          </div>
+          <div class="split">
+            <div><label>Entrance</label><select data-profile="entrance"><option value="none">None (video’s own motion)</option><option value="lunge">Lunge toward camera</option><option value="rise">Rise from below</option><option value="fade">Quick fade</option></select></div>
+            <div><label>Image hold (s)</label><input type="number" min="0.5" max="15" step="0.1" data-profile="holdSec"></div>
+            <div><label>Fade-out (ms)</label><input type="number" min="0" max="3000" step="50" data-profile="fadeOutMs"></div>
+            <div><label class="toggle"><input type="checkbox" data-profile="placement.flip"> Flip horizontally</label></div>
+          </div>
+
+          <fieldset>
+            <legend><label class="toggle"><input type="checkbox" data-profile="chroma.enabled"> Chroma key (remove green/blue screen)</label></legend>
+            <div class="split">
+              <div><label>Key colour</label><div class="inline"><input type="color" data-profile="chroma.color"><button class="btn small ghost" id="autoKey">Auto-detect</button></div></div>
+              <div><label>Similarity <output data-for="chroma.similarity"></output></label><input type="range" min="0" max="0.8" step="0.005" data-profile="chroma.similarity"></div>
+              <div><label>Edge smoothness <output data-for="chroma.smoothness"></output></label><input type="range" min="0.001" max="0.5" step="0.005" data-profile="chroma.smoothness"></div>
+              <div><label>Spill reduction <output data-for="chroma.spill"></output></label><input type="range" min="0.001" max="1" step="0.01" data-profile="chroma.spill"></div>
+            </div>
+          </fieldset>
+          <button class="btn small ghost" id="resetProfile">Reset this scare’s placement</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- THEME -->
+    <section class="card">
+      <h2>Theme</h2>
+      <label>Look of the booth, iPad, strip and download page</label>
+      <select data-path="theme.name">
+        <option value="romance">♥ Romance — pink, flowers &amp; hearts</option>
+        <option value="horror">Horror — dark &amp; crimson</option>
+      </select>
+      <label>Booth &amp; strip title</label><input type="text" maxlength="40" data-path="strip.title">
+      <p class="muted small">Switching theme also swaps the questions, title and footer to that theme’s wording, unless you’ve written your own. The jump scare is the same in both.</p>
+    </section>
+
+    <!-- CAMERA -->
+    <section class="card">
+      <h2>Camera</h2>
+      <label>Webcam</label>
+      <select id="camSelect"></select>
+      <label>Resolution</label>
+      <select data-path="camera.resolution"><option value="720p">1280 × 720</option><option value="1080p">1920 × 1080 (recommended)</option><option value="4k">3840 × 2160</option></select>
+      <label>Fit on monitor</label>
+      <select data-path="camera.fit"><option value="cover">Fill screen (crop edges if aspect differs)</option><option value="contain">Show whole frame (letterbox)</option></select>
+      <label class="toggle"><input type="checkbox" data-path="camera.mirrorPreview"> Mirror live preview (like a mirror)</label>
+      <label class="toggle"><input type="checkbox" data-path="camera.mirrorSaved"> Mirror saved photos <span class="muted small">(off = text reads correctly)</span></label>
+      <label>Camera rotation <span class="muted small">(webcam mounted on its side)</span></label>
+      <select data-path="camera.rotation"><option value="0">Normal (camera upright)</option><option value="90">Turn 90° clockwise</option><option value="270">Turn 90° anticlockwise</option><option value="180">Upside down (180°)</option></select>
+      <p class="muted small">Mount the webcam on its side for a tall picture that fills a portrait monitor with nothing cropped. Pick whichever option makes people stand upright.</p>
+      <label>On a portrait (tall) monitor, with the camera upright</label>
+      <select data-path="camera.portraitLayout"><option value="window">Camera picture full width, question above, countdown below</option><option value="fill">Fill the whole screen (crops the sides of the picture)</option></select>
+      <label class="toggle hl"><input type="checkbox" data-path="camera.demoMode"> Demo camera (test without a webcam)</label>
+    </section>
+
+    <!-- SOUND -->
+    <section class="card">
+      <h2>Sound</h2>
+      <label>Master volume <output data-for-path="sound.volume"></output></label>
+      <input type="range" min="0" max="1" step="0.01" data-path="sound.volume">
+      <label>Scare sting</label>
+      <select id="stingSelect" data-path="sound.sting"></select>
+      <label class="btn small ghost filebtn">Upload sound… <input type="file" id="soundFile" accept="audio/*,.mp3,.wav,.ogg,.m4a"></label>
+      <label class="toggle"><input type="checkbox" data-path="sound.useVideoAudio"> Play the scare video’s own audio</label>
+      <p class="muted small">Tip: if your scare video already has a scream, set the sting to “None” so they don’t double up.</p>
+      <div class="actions"><button class="btn small" data-cmd="testSound">🔊 Test sound on booth</button></div>
+    </section>
+
+    <!-- TIMING -->
+    <section class="card">
+      <h2>Timing &amp; photos</h2>
+      <div class="split two">
+        <div><label>Answer time after each question (s)</label><input type="number" min="0" max="60" step="0.5" data-path="timing.answerSec"></div>
+        <div><label>Countdown (s)</label><input type="number" min="1" max="10" step="1" data-path="timing.countdownSec"></div>
+        <div style="grid-column:1/-1"><label class="toggle"><input type="checkbox" data-path="timing.shutterFlash"> Screen flash — the main display flashes for photos 1–3</label></div>
+        <div><label>Screen flash colour</label><select data-path="timing.flashColor"><option value="black">Black (a quick blink; faces lit by the room or flash light)</option><option value="white">White (lights up faces, like a flash)</option></select></div>
+        <div><label>Photos taken around each flash</label><input type="number" min="1" max="20" step="1" data-path="timing.shotBurstCount"></div>
+        <div><label>Screen flash length (ms)</label><input type="number" min="100" max="3000" step="50" data-path="timing.flashMs"></div>
+        <div><label>Start taking photos before flash (ms)</label><input type="number" min="0" max="2000" step="50" data-path="timing.preFlashMs"></div>
+        <div><label>Keep taking photos after flash (ms)</label><input type="number" min="0" max="2000" step="50" data-path="timing.postFlashMs"></div>
+        <div class="muted small" style="grid-column:1/-1">The booth keeps the best photo of each burst: eyes open, faces well lit (not blown out by the flash), sharp, and everyone in the picture.</div>
+        <div><label>Scare strikes — earliest (s into final countdown)</label><input type="number" min="0" max="20" step="0.1" data-path="timing.scareAtMinSec"></div>
+        <div><label>Scare strikes — latest (s into final countdown)</label><input type="number" min="0" max="20" step="0.1" data-path="timing.scareAtMaxSec"></div>
+        <div><label>Black flash before the scare (ms, 0 = off)</label><input type="number" min="0" max="1500" step="10" data-path="timing.scareBlackoutMs"></div>
+        <div><label>Jump-scare reaction photos</label><input type="number" min="2" max="40" step="1" data-path="timing.burstCount"></div>
+        <div><label>Reaction burst length (s)</label><input type="number" min="0.5" max="10" step="0.1" data-path="timing.burstDurationSec"></div>
+        <div style="grid-column:1/-1"><label class="toggle"><input type="checkbox" data-path="flow.chooseOnIpad"> Guests pick the final photo on the iPad <span class="muted small">(off = the booth picks the best reaction)</span></label></div>
+        <div><label>Time to pick on iPad (s)</label><input type="number" min="10" max="600" step="5" data-path="timing.chooseTimeoutSec"></div>
+        <div><label class="toggle"><input type="checkbox" data-path="flow.showWarning"> Show a warning screen before starting</label></div>
+        <div><label>Strip screen timeout (s)</label><input type="number" min="5" max="1800" step="5" data-path="timing.doneTimeoutSec"></div>
+        <div><label>Idle session timeout (s)</label><input type="number" min="30" max="3600" step="10" data-path="timing.inactivityTimeoutSec"></div>
+      </div>
+    </section>
+
+    <!-- SESSION VIDEO -->
+    <section class="card">
+      <h2>Session video</h2>
+      <label class="toggle hl"><input type="checkbox" data-path="record.enabled"> Record each session (from Start until the last photo)</label>
+      <label class="toggle"><input type="checkbox" data-path="record.audio"> Record sound from a microphone</label>
+      <label>Microphone</label>
+      <select id="micSelect"></select>
+      <label>Video quality</label>
+      <select data-path="record.videoKbps"><option value="2000">Small files (2 Mbps)</option><option value="4000">Good (4 Mbps)</option><option value="8000">High (8 Mbps)</option></select>
+      <label>Session video size</label>
+      <select data-path="record.size"><option value="720p">720p — lighter, keeps the jump scare smooth (recommended)</option><option value="full">Same as the camera (heavier)</option></select>
+      <label class="toggle"><input type="checkbox" data-path="record.keepCandidates"> Keep every photo from each flash burst (not only the best)</label>
+      <p class="muted small">Videos are saved only on this PC, in each session’s folder (<i>interaction.mp4</i> or <i>.webm</i>). They are never shown on the QR download page. Open them from the <a href="/gallery" target="_blank" style="color:#ffb3b8">gallery</a>.</p>
+    </section>
+
+    <!-- LIGHTS -->
+    <section class="card wide" id="lightsCard">
+      <h2>Lights — room light, LED strip &amp; flash</h2>
+      <div class="lights-layout">
+        <div>
+          <label class="toggle hl"><input type="checkbox" data-path="lights.enabled"> Control the lights from ScareBooth</label>
+          <label>Lights box</label>
+          <div class="inline"><select id="lightsPort" data-path="lights.port"></select><button class="btn small ghost" id="lightsRefresh" title="Look for USB ports">↻</button><button class="btn small ghost" id="lightsReconnect">Reconnect</button></div>
+          <div class="tunnel-status" id="lightsStatus"></div>
+          <div class="light-preview" id="lightPreview">
+            <div class="lp" id="lpRoom"><i></i><span>Room light</span></div>
+            <div class="lp strip" id="lpStrip"><i></i><span>LED strip</span></div>
+            <div class="lp" id="lpFlash"><i></i><span>Flash</span></div>
+          </div>
+          <div class="actions">
+            <button class="btn small" data-light="scare">⚡ Test jump-scare lights</button>
+            <button class="btn small ghost" data-light="flash">Test flash</button>
+            <button class="btn small ghost" data-light="session">Normal (session)</button>
+            <button class="btn small ghost" data-light="idle">Idle</button>
+            <button class="btn small ghost" data-light="off">All off</button>
+          </div>
+          <p class="muted small">Jump scare: the room light turns off, the LED strip turns red and the flash light comes on for the reaction photos, then everything goes back to normal.</p>
+        </div>
+        <div>
+          <div class="split two">
+            <div><label>Idle strip colour (breathing)</label><input type="color" data-path="lights.idleColor"></div>
+            <div><label>Session strip colour</label><input type="color" data-path="lights.sessionColor"></div>
+            <div><label>Jump-scare strip colour</label><input type="color" data-path="lights.scareColor"></div>
+            <div><label>LEDs on the strip</label><input type="number" min="1" max="600" step="1" data-path="lights.ledCount"></div>
+            <div><label>Strip brightness <output data-for-path="lights.stripBrightness"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.stripBrightness"></div>
+            <div><label>Room light level <output data-for-path="lights.roomLevel"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.roomLevel"></div>
+            <div><label>Flash brightness <output data-for-path="lights.flashLevel"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.flashLevel"></div>
+            <div><label>Flash stays on after the burst (ms)</label><input type="number" min="0" max="5000" step="50" data-path="lights.scareFlashExtraMs"></div>
+            <div><label>Back to normal after (ms)</label><input type="number" min="0" max="10000" step="100" data-path="lights.revertDelayMs"></div>
+            <div><label class="toggle"><input type="checkbox" data-path="lights.flashOnPhotos"> Also fire the flash light for photos 1–3</label></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROMPTS -->
+    <section class="card">
+      <h2>Questions on the main display</h2>
+      <label>Photo 1</label><textarea rows="2" data-path="prompts.0"></textarea>
+      <label>Photo 2</label><textarea rows="2" data-path="prompts.1"></textarea>
+      <label>Photo 3</label><textarea rows="2" data-path="prompts.2"></textarea>
+      <label>Photo 4 (the jump scare strikes at a random moment — don’t give it away!)</label><textarea rows="2" data-path="prompts.3"></textarea>
+      <label>Guest warning text</label><textarea rows="4" data-path="warning.text"></textarea>
+    </section>
+
+    <!-- STRIP -->
+    <section class="card">
+      <h2>Photo strip</h2>
+      <label>Footer line</label><input type="text" maxlength="80" data-path="strip.footer">
+      <label class="toggle"><input type="checkbox" data-path="strip.showDate"> Show date</label>
+      <div class="actions"><button class="btn small ghost" id="stripPreviewBtn">Preview strip design</button></div>
+      <img id="stripPreview" alt="">
+    </section>
+
+    <section class="card">
+      <h2>QR download</h2>
+      <label class="toggle"><input type="checkbox" data-path="share.enabled"> Show a QR code so guests can download their photos</label>
+      <label>Download link</label>
+      <select data-path="share.mode">
+        <option value="auto">Internet link when online — works on mobile data (falls back to booth Wi-Fi)</option>
+        <option value="wifi">Booth Wi-Fi only (no internet used)</option>
+      </select>
+      <div class="tunnel-status" id="tunnelStatus"></div>
+      <div class="actions" style="margin-top:8px"><button class="btn small ghost" id="restartLink">↻ Restart internet link</button></div>
+      <label>Fixed public address (optional, advanced)</label>
+      <input type="text" data-path="share.customUrl" placeholder="https://photos.yourdomain.com — only if you run your own Cloudflare named tunnel">
+      <label>PC address for the booth Wi-Fi QR code</label>
+      <select id="shareHost" data-path="share.host"></select>
+      <p class="muted small">When the internet link is offline, guests’ phones must be on the <b>same Wi-Fi as this PC</b>. Fill in the Wi-Fi details below so a “Join Wi-Fi” QR code appears in that case.</p>
+      <div class="split two">
+        <div><label>Wi-Fi name (SSID)</label><input type="text" maxlength="64" data-path="share.wifiSsid" placeholder="e.g. ScareBooth"></div>
+        <div><label>Wi-Fi password</label><input type="text" maxlength="64" data-path="share.wifiPassword"></div>
+        <div><label>Security</label><select data-path="share.wifiSecurity"><option value="WPA">WPA / WPA2 / WPA3</option><option value="WEP">WEP</option><option value="nopass">Open (no password)</option></select></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Printing</h2>
+      <label class="toggle hl"><input type="checkbox" data-path="print.enabled"> Ask guests how many prints they want</label>
+      <label>Print method</label>
+      <select data-path="print.method">
+        <option value="direct">Straight to the printer (recommended — no dialog, no browser)</option>
+        <option value="browser">Through the display browser (needs start-scarebooth.bat)</option>
+      </select>
+      <label>Printer</label>
+      <div class="inline"><select id="printerSelect" data-path="print.printerName"></select><button class="btn small ghost" id="refreshPrinters">↻</button></div>
+      <p class="muted small" id="printerNote"></p>
+      <label>Most prints per session</label><input type="number" min="1" max="10" step="1" data-path="print.maxCopies">
+      <label>If guests don’t choose before the strip screen times out, print</label>
+      <select data-path="print.timeoutCopies"><option value="0">Nothing (no prints)</option><option value="1">1 copy</option><option value="2">2 copies</option><option value="3">3 copies</option><option value="4">4 copies</option><option value="5">5 copies</option><option value="6">6 copies</option></select>
+      <label>Paper layout</label>
+      <select data-path="print.layout">
+        <option value="4x6-double">4×6 in sheet, two strips side by side (photo printers with 2-inch cut)</option>
+        <option value="4x6-single">4×6 in sheet, one strip in the middle</option>
+        <option value="2x6">2×6 in strip paper</option>
+      </select>
+      <p class="muted small">Reprint any past strip from the <a href="/gallery" target="_blank" style="color:#ffb3b8">gallery</a>. Set paper size and borderless in the printer’s Windows <i>Printing preferences</i> — ScareBooth also picks a 4×6 / 2×6 paper size automatically when the driver offers one. With the two-per-sheet layout, 3 prints uses 2 sheets.</p>
+      <div class="actions"><button class="btn small" data-cmd="testPrint">🖨 Test print</button><span class="muted" id="printCount"></span><button class="btn small ghost" id="resetPrints">Reset counter</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Maintenance</h2>
+      <p class="muted small" id="dataDir"></p>
+      <div class="actions"><button class="btn small ghost" id="resetAll">Reset all settings to defaults</button></div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/scare-renderer.js"></script>
+  <script src="/js/demo-camera.js"></script>
+  <script src="/js/strip.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

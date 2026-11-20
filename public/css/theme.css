@@ -1,0 +1,89 @@
+/* ScareBooth shared theme */
+@font-face { font-family: 'Eater'; src: url('/fonts/eater-latin-400-normal.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'Special Elite'; src: url('/fonts/special-elite-latin-400-normal.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'Oswald'; font-weight: 400; src: url('/fonts/oswald-latin-400-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Oswald'; font-weight: 500; src: url('/fonts/oswald-latin-500-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Oswald'; font-weight: 600; src: url('/fonts/oswald-latin-600-normal.woff2') format('woff2'); font-display: swap; }
+
+:root {
+  --bg: #070405;
+  --bg2: #120a0b;
+  --panel: rgba(18, 9, 10, 0.86);
+  --line: rgba(232, 223, 207, 0.12);
+  --crimson: #b3121b;
+  --crimson-hi: #e0242f;
+  --blood: #5e0910;
+  --bone: #e8dfcf;
+  --ash: #9b918a;
+  --text: #efe7da;
+  --ok: #6fbf73;
+  --warn: #e0a43a;
+  --font-logo: 'Eater', 'Chiller', fantasy;
+  --font-type: 'Special Elite', 'Courier New', monospace;
+  --font-ui: 'Oswald', 'Arial Narrow', 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+body { overflow: hidden; }
+button { font-family: inherit; }
+
+/* film grain (static texture, gently shifted — no flashing) */
+.grain::after {
+  content: ''; position: fixed; inset: -50%; pointer-events: none; z-index: 9000; opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grainShift 1.2s steps(6) infinite;
+}
+@keyframes grainShift {
+  0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .grain::after { animation: none; } }
+
+.logo {
+  font-family: var(--font-logo); color: var(--crimson-hi); letter-spacing: 0.02em; line-height: 1;
+  text-shadow: 0 0 18px rgba(224, 36, 47, 0.35), 0 4px 0 #2a0306, 0 10px 30px #000;
+}
+.type { font-family: var(--font-type); }
+.eyebrow { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 0.28em; color: var(--ash); font-size: 14px; }
+
+/* big touch buttons */
+.btn {
+  appearance: none; border: 1px solid rgba(224, 36, 47, 0.55); color: var(--bone); cursor: pointer;
+  background: linear-gradient(180deg, #8e0f17 0%, #5a070d 100%);
+  font-family: var(--font-ui); font-weight: 500; font-size: 30px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 22px 44px; min-height: 84px; border-radius: 6px; position: relative;
+  box-shadow: 0 0 0 1px #000 inset, 0 12px 40px rgba(179, 18, 27, 0.25), 0 2px 0 rgba(255, 255, 255, 0.08) inset;
+  transition: transform 0.12s ease, box-shadow 0.25s ease, filter 0.2s ease;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none;
+}
+.btn:active { transform: scale(0.97); filter: brightness(1.15); }
+.btn[disabled] { opacity: 0.45; pointer-events: none; }
+.btn.ghost { background: rgba(255, 255, 255, 0.03); border-color: var(--line); color: var(--ash); box-shadow: none; }
+.btn.small { font-size: 18px; min-height: 56px; padding: 12px 24px; letter-spacing: 0.1em; }
+
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 99px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(0,0,0,0.5); border: 1px solid var(--line); color: var(--ash); }
+.pill .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ash); }
+.pill.ok .dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.pill.bad { color: #f0b3b3; border-color: rgba(224,36,47,0.5); }
+.pill.bad .dot { background: var(--crimson-hi); box-shadow: 0 0 8px var(--crimson-hi); }
+
+/* unsettling but gentle screen transition */
+.screen { position: absolute; inset: 0; display: none; }
+.screen.active { display: flex; animation: creepIn 0.55s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes creepIn {
+  0% { opacity: 0; filter: blur(10px) contrast(1.4); transform: scale(1.025) skewX(-0.6deg); }
+  35% { opacity: 0.75; filter: blur(2px); transform: scale(1.005) skewX(0.4deg); }
+  100% { opacity: 1; filter: none; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .screen.active { animation-duration: 0.01s; } }
+
+.vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0,0,0,0.65) 100%); }
+
+/* ---- romance theme fonts ---- */
+@font-face { font-family: 'Great Vibes'; src: url('/fonts/great-vibes-latin-400-normal.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'Playfair Display'; font-style: normal; src: url('/fonts/playfair-display-latin-400-normal.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'Playfair Display'; font-style: italic; src: url('/fonts/playfair-display-latin-400-italic.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'Quicksand'; font-weight: 500; src: url('/fonts/quicksand-latin-500-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Quicksand'; font-weight: 600; src: url('/fonts/quicksand-latin-600-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Quicksand'; font-weight: 700; src: url('/fonts/quicksand-latin-700-normal.woff2') format('woff2'); font-display: swap; }

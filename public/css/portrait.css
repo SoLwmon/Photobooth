@@ -1,0 +1,88 @@
+/* ==========================================================================
+   Question / answer-timer / pose elements (all layouts)
+   and the portrait-monitor layout (body.portrait, set by display.js)
+   ========================================================================== */
+
+/* question pops in */
+#lower.pop .lower-card { animation: qPop 0.7s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes qPop {
+  0% { opacity: 0; transform: translateY(18px) scale(0.86); filter: blur(6px); }
+  60% { opacity: 1; transform: translateY(0) scale(1.03); filter: blur(0); }
+  100% { opacity: 1; transform: none; }
+}
+/* answer timer: a bar that drains while the couple answers */
+.answer { display: none; margin: 1.6vh auto 0; width: min(60vw, 720px); }
+#lower.answering .answer { display: block; animation: fadeUp 0.4s ease both; }
+.answer-bar { height: 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.18); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15); }
+.answer-bar i { display: block; height: 100%; background: var(--crimson-hi); transform-origin: left center; border-radius: 99px; box-shadow: 0 0 14px var(--crimson-hi); }
+.answer-label { margin-top: 1vh; font-size: clamp(14px, 1.3vw, 24px); }
+.theme-romance .answer-bar { background: rgba(214, 58, 110, 0.15); }
+/* after the answer: pose for the photo */
+.pose-line { display: none; font-size: clamp(26px, 2.6vw, 48px); color: var(--crimson-hi); margin-top: 1.2vh; }
+#lower.counting .pose-line { display: block; animation: fadeUp 0.45s ease both; }
+#lower.counting .prompt { opacity: 0.55; transform: scale(0.92); transition: all 0.4s ease; }
+.theme-romance .pose-line { color: var(--crimson); text-shadow: 0 0 2px #fff, 0 0 12px #fff; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ---------------------------------------------------------------- portrait monitor */
+body.portrait { background: var(--bg); }
+.theme-romance body.portrait, body.portrait.theme-romance { background: linear-gradient(180deg, #fff3f6 0%, #fde1ea 100%); }
+body.portrait #stage { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.9), 0 30px 80px rgba(0, 0, 0, 0.35); }
+body.portrait.theme-horror #stage { box-shadow: 0 0 0 2px rgba(224, 36, 47, 0.5), 0 30px 80px #000; }
+
+/* title at the top */
+body.portrait #brand { left: 50%; right: auto; transform: translateX(-50%); top: 2.6vh; font-size: 7vw; opacity: 1; white-space: nowrap; }
+body.portrait.phase-idle #brand { top: 12vh; font-size: 8.6vw; opacity: 1; }
+
+/* idle: tagline + call to action under the camera picture */
+body.portrait #attract { background: none; align-items: flex-start; padding: calc(var(--stage-bottom) + 6vh) 6vw 0; }
+body.portrait .attract-card .logo.big { display: none; }
+body.portrait .tagline { font-size: 5.2vw; }
+body.portrait .cta { font-size: 3vw; }
+
+/* question above the camera picture */
+body.portrait.cam-window #lower { background: none; bottom: auto; height: var(--stage-top); align-items: center; justify-content: center; padding: 8vh 6vw 2vh; }
+body.portrait .lower-card { max-width: 90vw; }
+body.portrait .shotno { font-size: 2.8vw; }
+body.portrait .prompt { font-size: 6.4vw; margin: 1.2vh 0 0.8vh; }
+body.portrait .answer { width: 70vw; }
+body.portrait .answer-label { font-size: 2.6vw; }
+body.portrait .pose-line { font-size: 5.6vw; }
+
+/* countdown: on the camera picture (see display.css) */
+body.portrait.cam-off #attract { align-items: center; padding: 0 6vw; }
+
+/* reaction picker (only if picking on the iPad is switched on) */
+body.portrait .choose-wrap { width: 92vw; }
+body.portrait .choose-wrap h2 { font-size: 5.5vw; }
+body.portrait .choose-preview { height: 34vh; }
+body.portrait .filmstrip img { width: 14vw; flex-basis: 14vw; }
+
+body.portrait .dev .type { font-size: 6vw; }
+body.portrait .bar { width: 60vw; }
+
+/* finished: title on top, big strip with the QR code(s) beside it, print message underneath */
+body.portrait #done { align-items: center; justify-content: center; }
+body.portrait .done-wrap {
+  display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center;
+  grid-template-areas: "eye eye" "title title" "strip qrs" "print print";
+  column-gap: 6vw; row-gap: 1.4vh; padding: 0 4vw;
+}
+body.portrait .done-text { display: contents; }
+body.portrait .done-text .eyebrow { grid-area: eye; text-align: center; font-size: 2.6vw; }
+body.portrait .done-text h2 { grid-area: title; text-align: center; font-size: 9vw; line-height: 1.1; margin: 0 0 1.5vh; }
+body.portrait .done-text .print-line { grid-area: print; text-align: center; font-size: 3.6vw; margin-top: 1.5vh; }
+body.portrait #stripImg { grid-area: strip; height: 62vh; }
+body.portrait .qrs { grid-area: qrs; flex-direction: column; gap: 2vh; margin: 0; }
+body.portrait .qr-img { width: 30vw; height: 30vw; min-width: 0; min-height: 0; }
+body.portrait .qr-cap { font-size: 2.4vw; }
+
+body.portrait .florals { width: clamp(120px, 24vw, 300px); }
+body.portrait .sysmsg { font-size: 2.4vw; }
+
+/* tall screen with the camera filling it (webcam mounted sideways, or "fill"): question at the bottom over the picture */
+body.portrait:not(.cam-window) #lower { padding: 0 6vw 6vh; }
+body.portrait:not(.cam-window) #countdown { padding-bottom: 30vh; }
+body.portrait:not(.cam-window) #countdown .ring { width: 56vw; }
+body.portrait:not(.cam-window) #countdown .num { font-size: 32vw; }
+body.portrait:not(.cam-window) #brand { text-shadow: 0 2px 0 rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.9); }

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ScareBooth">
+  <meta name="theme-color" content="#070405">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <link rel="icon" href="/assets/favicon.svg">
+  <title>ScareBooth</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/controller.css">
+  <link rel="stylesheet" href="/css/romance.css">
+</head>
+<body class="grain ipad">
+  <div class="vignette"></div>
+  <div class="love" id="love"></div>
+  <div class="florals tl"></div><div class="florals tr"></div><div class="florals bl"></div><div class="florals br"></div>
+
+  <main id="app">
+    <!-- idle -->
+    <section id="s-idle" class="screen center">
+      <div class="eyebrow" data-t="welcome"></div>
+      <h1 class="logo hero" data-title>Till Death Do Us Part</h1>
+      <p class="type lead" data-th="lead"></p>
+      <button class="btn huge" data-action="begin" id="beginBtn">Start</button>
+      <p class="type sub" id="idleNote"></p>
+    </section>
+
+    <!-- warning -->
+    <section id="s-warning" class="screen center">
+      <div class="warn-card">
+        <div class="warn-icon">!</div>
+        <div class="eyebrow red" data-t="warnEyebrow"></div>
+        <h2 class="type">Sudden visuals &amp; loud sound</h2>
+        <p id="warningText"></p>
+        <div class="row">
+          <button class="btn ghost" data-action="decline">No thanks</button>
+          <button class="btn" data-action="accept">I understand — Start</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- shooting -->
+    <section id="s-shooting" class="screen center">
+      <div class="eye"><span></span></div>
+      <h2 class="type look">Look at the big screen</h2>
+      <p class="type sub">Your questions and countdowns are up there.</p>
+    </section>
+
+    <!-- choose -->
+    <section id="s-choose" class="screen choose">
+      <header>
+        <div class="eyebrow red">The final photo</div>
+        <h2 class="type">Pick your best reaction</h2>
+        <p class="sub small choose-hint">Tap a photo to see it bigger, then tap <b>Use this one</b>.</p>
+      </header>
+      <div class="preview"><img id="chooseImg" alt="Selected reaction"></div>
+      <div class="thumbs" id="thumbs"></div>
+      <p class="msg" id="chooseMsg"></p>
+      <div class="row">
+        <button class="btn" id="confirmBtn">Use this one</button>
+      </div>
+      <p class="sub small" id="chooseTimer"></p>
+    </section>
+
+    <!-- composing -->
+    <section id="s-composing" class="screen center">
+      <div class="eye"><span></span></div>
+      <h2 class="type look">Developing your strip…</h2>
+    </section>
+
+    <!-- done -->
+    <section id="s-done" class="screen center">
+      <div class="eyebrow red" data-t="ipadDoneEyebrow"></div>
+      <h2 class="logo donehead" id="doneHead">Your strip is ready</h2>
+      <div id="printAsk" class="print-ask" hidden>
+        <h3 class="type">How many prints would you like?</h3>
+        <div class="copies" id="copyBtns"></div>
+      </div>
+      <p class="type print-status" id="printStatus"></p>
+      <div class="qrs" id="qrs">
+        <div class="qr" id="qrWifiBox" hidden><div class="qr-img" id="qrWifi"></div><div class="qr-cap"><b>1</b> Join Wi-Fi <span id="qrWifiName"></span></div></div>
+        <div class="qr" id="qrDlBox" hidden><div class="qr-img" id="qrDl"></div><div class="qr-cap"><b id="qrStep">2</b> Scan to download<span id="qrNote"></span></div></div>
+      </div>
+      <button class="btn" data-action="begin" id="againBtn">Start a new session</button>
+      <p class="sub small" id="doneTimer"></p>
+    </section>
+  </main>
+
+  <button id="cancelBtn" class="cancel" data-action="cancel" hidden>✕ Cancel session</button>
+  <div id="status" class="pill"><span class="dot"></span><span id="statusText">Connecting…</span></div>
+  <div id="toast"></div>
+
+  <script src="/js/vendor/qrcode.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/controller.js"></script>
+</body>
+</html>
