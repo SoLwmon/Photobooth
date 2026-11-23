@@ -193,6 +193,10 @@ ScareBooth also drives **WiZ** colour bulbs directly over the booth router, with
 
 Colours and brightness are in the same card. The bulb's status shows *Connected* when it answers. WiZ bulbs take about 0.1 s to change, so they're used for room colour only; the camera flash stays on the USB lights box.
 
+### Strip logo
+
+The strip ends with the **毒爱 · Till Death Do Us Part** logo in a black band across the bottom. The logo already carries the title, so the top of the strip keeps only the date, and the photos are a little wider to make room. Turn it off in the console's **Photo strip** card (*Logo across the bottom*) to go back to the title and footer line. To use different artwork, replace `public/assets/strip-logo.png` with your own image on a black background.
+
 ## 7. Scare files
 
 ScareBooth always draws the scare on a transparent layer exactly on top of the live camera picture. The webcam keeps playing underneath, so the scare seems to step into the room. You never see a video player, borders or controls, and nothing flashes while the scare loads, because it's loaded in advance.

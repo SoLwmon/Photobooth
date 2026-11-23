@@ -38,21 +38,21 @@
   }
   /** Crop positions for all 4 photos. A photo where no face is found (e.g. hands over faces in the scare photo)
    *  borrows the face position from the others — the camera doesn't move during a session. */
-  async function cropFocusAll(imgs) {
+  async function cropFocusAll(imgs, ratio = 720 / 1080) {
     const boxes = await Promise.all(imgs.map(faceBox));
     const found = boxes.filter(Boolean);
     const avg = found.length ? {
       x: found.reduce((a, f) => a + f.x, 0) / found.length, y: found.reduce((a, f) => a + f.y, 0) / found.length,
       top: Math.min(...found.map(f => f.top)), bottom: Math.max(...found.map(f => f.bottom)),
     } : null;
-    return imgs.map((img, i) => cropFocus(img, boxes[i] || avg));
+    return imgs.map((img, i) => cropFocus(img, boxes[i] || avg, ratio));
   }
-  function cropFocus(img, f) {
+  function cropFocus(img, f, ratio = 720 / 1080) {
     const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
     if (ih <= iw) return null; // landscape photo: centred, exactly as before
     if (f) {
       // crop height (as a share of the photo height) for a 3:2 box at full photo width
-      const cropH = (iw * 720 / 1080) / ih;
+      const cropH = (iw * ratio) / ih;
       const span = f.bottom - f.top;
       // faces at ~42% of the crop; if several faces at different heights, centre on them all
       return span > cropH * 0.6 ? { x: 0.5, y: (f.top + f.bottom) / 2, anchor: 0.5 } : { x: 0.5, y: f.y, anchor: 0.42 };
@@ -61,9 +61,46 @@
   }
 
   /** Where the 4 photos go on the 1200 × 3600 strip: stacked, full width (tall photos are cropped to fit, see cropFocus). */
-  function layoutPhotos(imgs, TOP, W, H, M) {
-    const PW = 1080, PH = 720, GAP = 40;
-    return { rects: imgs.map((_, i) => ({ x: M, y: TOP + i * (PH + GAP), w: PW, h: PH })), fy: TOP + 4 * PH + 3 * GAP };
+  function layoutPhotos(imgs, TOP, W, H, M, bottom) {
+    // bottom: where the photos must end (the logo band starts below it); photos get a little wider than 3:2 to fit
+    const PW = 1080, GAP = 40, PH = bottom ? Math.floor((bottom - TOP - 3 * GAP) / 4) : 720;
+    return { rects: imgs.map((_, i) => ({ x: M, y: TOP + i * (PH + GAP), w: PW, h: PH })), fy: TOP + 4 * PH + 3 * GAP, ratio: PH / PW };
+  }
+
+  // ------------------------------------------------------------------ bottom logo band
+  // The logo artwork (public/assets/strip-logo.png) is on black, so it sits in a black band across the bottom.
+  const LOGO = { url: '/assets/strip-logo.png?v=dokuai-1', band: 880, gap: 60 };
+  async function loadLogo(opts) {
+    if (!opts.bottomLogo) return null;
+    try { return await loadImage(LOGO.url); } catch (_) { return null; }
+  }
+  /** Bounding box of the logo's non-black pixels, so any margin in the artwork doesn't waste strip space. */
+  function logoBox(img) {
+    const iw = img.naturalWidth, ih = img.naturalHeight, k = Math.min(1, 400 / iw);
+    const c = document.createElement('canvas'); c.width = Math.round(iw * k); c.height = Math.round(ih * k);
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+    for (let y = 0; y < c.height; y++) for (let xx = 0; xx < c.width; xx++) {
+      const i = (y * c.width + xx) * 4;
+      if (Math.max(d[i], d[i + 1], d[i + 2]) > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    if (x1 <= x0 || y1 <= y0) return { sx: 0, sy: 0, sw: iw, sh: ih };
+    const pad = 6;
+    const sx = Math.max(0, x0 / k - pad), sy = Math.max(0, y0 / k - pad);
+    return { sx, sy, sw: Math.min(iw - sx, (x1 - x0) / k + pad * 2), sh: Math.min(ih - sy, (y1 - y0) / k + pad * 2) };
+  }
+  function drawLogoBand(x, logo, W, H) {
+    const top = H - LOGO.band;
+    const fade = x.createLinearGradient(0, top - 46, 0, top);
+    fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, '#000');
+    x.fillStyle = fade; x.fillRect(0, top - 46, W, 46);
+    x.fillStyle = '#000'; x.fillRect(0, top, W, LOGO.band);
+    const b = logoBox(logo);
+    const maxW = W - 80, maxH = LOGO.band - 50;
+    const s = Math.min(maxW / b.sw, maxH / b.sh);
+    const dw = b.sw * s, dh = b.sh * s;
+    x.drawImage(logo, b.sx, b.sy, b.sw, b.sh, (W - dw) / 2, top + (LOGO.band - dh) / 2, dw, dh);
   }
 
   function noiseTile() {
@@ -104,8 +141,10 @@
     } catch (_) {}
     let floral = null;
     try { floral = await loadImage('/assets/florals-corner.svg?v=red-roses'); } catch (_) {}
-    const W = 1200, H = 3600, M = 60, TOP = 400, MAT = 14;
-    const L = layoutPhotos(imgs, TOP, W, H, M);
+    const logo = opts.logo;
+    // with the logo the title is in the artwork, so the top only keeps the date
+    const W = 1200, H = 3600, M = 60, TOP = logo ? 170 : 400, MAT = 14;
+    const L = layoutPhotos(imgs, TOP, W, H, M, logo ? H - LOGO.band - LOGO.gap : 0);
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d');
     const rose = '#c2185b', deep = '#5b1a35';
@@ -125,11 +164,13 @@
 
     // flowers in the corners
     if (floral) {
-      const f = 330, fb = 280;
+      const f = logo ? 230 : 330, fb = 280;
       x.drawImage(floral, 0, 0, f, f);
       x.save(); x.translate(W, 0); x.scale(-1, 1); x.drawImage(floral, 0, 0, f, f); x.restore();
-      x.save(); x.translate(0, H); x.scale(1, -1); x.drawImage(floral, 0, 0, fb, fb); x.restore();
-      x.save(); x.translate(W, H); x.scale(-1, -1); x.drawImage(floral, 0, 0, fb, fb); x.restore();
+      if (!logo) {
+        x.save(); x.translate(0, H); x.scale(1, -1); x.drawImage(floral, 0, 0, fb, fb); x.restore();
+        x.save(); x.translate(W, H); x.scale(-1, -1); x.drawImage(floral, 0, 0, fb, fb); x.restore();
+      }
     }
 
     // title: two balanced lines when long
@@ -145,15 +186,17 @@
     const fontFor = (n) => `${n}px "Great Vibes", cursive`;
     x.font = fontFor(size);
     while (lines.some(l => x.measureText(l).width > 700) && size > 60) { size -= 4; x.font = fontFor(size); }
-    x.save();
-    x.shadowColor = 'rgba(0,0,0,0.18)'; x.shadowBlur = 14; x.shadowOffsetY = 4;
-    const tg = '#111'; // title in black
-    x.fillStyle = tg;
-    if (lines.length > 1) { x.fillText(lines[0], W / 2, 175); x.fillText(lines[1], W / 2, 175 + size * 0.95); }
-    else x.fillText(lines[0], W / 2, 230);
-    x.restore();
+    if (!logo) {
+      x.save();
+      x.shadowColor = 'rgba(0,0,0,0.18)'; x.shadowBlur = 14; x.shadowOffsetY = 4;
+      const tg = '#111'; // title in black
+      x.fillStyle = tg;
+      if (lines.length > 1) { x.fillText(lines[0], W / 2, 175); x.fillText(lines[1], W / 2, 175 + size * 0.95); }
+      else x.fillText(lines[0], W / 2, 230);
+      x.restore();
+    }
     // date + little heart divider
-    const dateY = lines.length > 1 ? 175 + size * 0.95 + 62 : 300;
+    const dateY = logo ? 108 : lines.length > 1 ? 175 + size * 0.95 + 62 : 300;
     if (opts.showDate) {
       x.font = 'italic 32px "Playfair Display", serif'; x.fillStyle = deep;
       const d = new Date();
@@ -193,16 +236,19 @@
       x.fillStyle = '#f48fb1'; heartPath(x, px + PW - 4, py + PH + 2, 18); x.fill();
     });
 
-    // footer
+    // footer: the logo band, or the footer line with hearts
     const fy = L.fy;
-    if (opts.footer) {
-      x.fillStyle = rose;
-      let fs = 76; x.font = fontFor(fs);
-      while (x.measureText(opts.footer).width > 760 && fs > 36) { fs -= 2; x.font = fontFor(fs); }
-      x.fillText(opts.footer, W / 2, fy + 120);
+    if (logo) drawLogoBand(x, logo, W, H);
+    else {
+      if (opts.footer) {
+        x.fillStyle = rose;
+        let fs = 76; x.font = fontFor(fs);
+        while (x.measureText(opts.footer).width > 760 && fs > 36) { fs -= 2; x.font = fontFor(fs); }
+        x.fillText(opts.footer, W / 2, fy + 120);
+      }
+      x.fillStyle = '#e8557f';
+      for (const dx of [-40, 0, 40]) { heartPath(x, W / 2 + dx, fy + 168, dx ? 18 : 26); x.fill(); }
     }
-    x.fillStyle = '#e8557f';
-    for (const dx of [-40, 0, 40]) { heartPath(x, W / 2 + dx, fy + 168, dx ? 18 : 26); x.fill(); }
 
     const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', opts.jpegQuality || 0.92));
     if (!blob) throw new Error('Strip encoding failed');
@@ -210,20 +256,24 @@
   }
 
   async function buildStrip({ photos, reaction, strip }) {
-    const opts = Object.assign({ title: 'ScareBooth', footer: '', showDate: true, jpegQuality: 0.92 }, strip || {});
+    const opts = Object.assign({ title: 'ScareBooth', footer: '', showDate: true, jpegQuality: 0.92, bottomLogo: false }, strip || {});
+    opts.logo = await loadLogo(opts);
+    // photo shape (height ÷ width) for the face-centred crop: wider than 3:2 when the logo takes the bottom
+    const ratio = opts.logo ? layoutPhotos([0, 0, 0, 0], 170, 1200, 3600, 60, 3600 - LOGO.band - LOGO.gap).ratio : 720 / 1080;
     if (opts.theme !== 'horror') {
       const imgs = await Promise.all([...photos.slice(0, 3), reaction].map(loadImage));
-      const focus = await cropFocusAll(imgs);
+      const focus = await cropFocusAll(imgs, ratio);
       return buildRomanceStrip(imgs, opts, focus);
     }
     try {
       await Promise.all([document.fonts.load('150px Eater'), document.fonts.load('40px "Special Elite"'), document.fonts.load('500 24px Oswald')]);
     } catch (_) {}
     const imgs = await Promise.all([...photos.slice(0, 3), reaction].map(loadImage));
-    const focus = await cropFocusAll(imgs);
+    const focus = await cropFocusAll(imgs, ratio);
+    const logo = opts.logo;
 
-    const W = 1200, H = 3600, M = 60, TOP = 360;
-    const L = layoutPhotos(imgs, TOP, W, H, M);
+    const W = 1200, H = 3600, M = 60, TOP = logo ? 170 : 360;
+    const L = layoutPhotos(imgs, TOP, W, H, M, logo ? H - LOGO.band - LOGO.gap : 0);
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d');
 
@@ -241,16 +291,18 @@
     x.textAlign = 'center'; x.textBaseline = 'alphabetic';
     let size = 150; x.font = `${size}px Eater, fantasy`;
     while (x.measureText(opts.title).width > W - 140 && size > 60) { size -= 6; x.font = `${size}px Eater, fantasy`; }
-    x.save();
-    x.shadowColor = 'rgba(0,0,0,0.9)'; x.shadowBlur = 30; x.shadowOffsetY = 8;
-    const tg = x.createLinearGradient(0, 120, 0, 240); tg.addColorStop(0, '#ff3b44'); tg.addColorStop(1, '#8e0c14');
-    x.fillStyle = tg; x.fillText(opts.title, W / 2, 230);
-    x.restore();
+    if (!logo) {
+      x.save();
+      x.shadowColor = 'rgba(0,0,0,0.9)'; x.shadowBlur = 30; x.shadowOffsetY = 8;
+      const tg = x.createLinearGradient(0, 120, 0, 240); tg.addColorStop(0, '#ff3b44'); tg.addColorStop(1, '#8e0c14');
+      x.fillStyle = tg; x.fillText(opts.title, W / 2, 230);
+      x.restore();
+    }
     if (opts.showDate) {
       x.font = '34px "Special Elite", monospace'; x.fillStyle = '#a89d94';
       const d = new Date();
       const txt = d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
-      spaced(x, txt, W / 2, 300, 6);
+      spaced(x, txt, W / 2, logo ? 108 : 300, 6);
     }
 
     // photos
@@ -281,14 +333,14 @@
 
     // footer
     const fy = L.fy;
-    if (opts.footer) {
+    if (logo) drawLogoBand(x, logo, W, H);
+    else if (opts.footer) {
       x.textAlign = 'center'; x.fillStyle = '#e8dfcf';
       let fs = 48; x.font = `${fs}px "Special Elite", monospace`;
       while (x.measureText(opts.footer).width > W - 120 && fs > 24) { fs -= 2; x.font = `${fs}px "Special Elite", monospace`; }
       x.fillText(opts.footer, W / 2, fy + 120);
     }
-    x.font = '500 24px Oswald, sans-serif'; x.fillStyle = '#8a3036';
-    spaced(x, 'S C A R E B O O T H', W / 2, fy + 190, 2);
+    if (!logo) { x.font = '500 24px Oswald, sans-serif'; x.fillStyle = '#8a3036'; spaced(x, 'S C A R E B O O T H', W / 2, fy + 190, 2); }
 
     const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', opts.jpegQuality || 0.92));
     if (!blob) throw new Error('Strip encoding failed');
