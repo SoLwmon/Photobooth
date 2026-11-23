@@ -193,6 +193,12 @@ ScareBooth also drives **WiZ** colour bulbs directly over the booth router, with
 
 Colours and brightness are in the same card. The bulb's status shows *Connected* when it answers. WiZ bulbs take about 0.1 s to change, so they're used for room colour only; the camera flash stays on the USB lights box.
 
+### Strip design image
+
+The strip uses the finished **rose-stained "Till Death Do Us Part" design** (`public/assets/strip-template.png`). ScareBooth finds its four black windows automatically and fills them with the photos (the jump-scare shot in the last one), centred on faces. The design already has the title, wedding date and roses, so the logo, date and footer options only apply to the other frames (*Strip frame* in the console's **Photo strip** card).
+
+To change the design, replace `strip-template.png` with another 1:3 image (ideally 1200 × 3600 px) that has **four solid-black boxes** where the photos go.
+
 ### Strip logo
 
 The strip ends with the **毒爱 · Till Death Do Us Part** logo in a black band across the bottom. The logo already carries the title, so the top of the strip keeps only the date, and the photos are a little wider to make room. Turn it off in the console's **Photo strip** card (*Logo across the bottom*) to go back to the title and footer line. The strip frame is **Dark** by default (black and red, blending into the logo band), whatever the booth theme; choose *Blush pink with roses* under **Strip frame** for the pink look. To use different artwork, replace `public/assets/strip-logo.png` with your own image on a black background.

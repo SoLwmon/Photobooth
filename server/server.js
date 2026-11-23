@@ -126,7 +126,7 @@ const DEFAULT_SETTINGS = {
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
   print: { enabled: false, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '' },
   scares: { active: 'builtin/pale-lady-alpha.webm', profiles: {} },
-  strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, bottomLogo: true, style: 'dark', jpegQuality: 0.92 },
+  strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, bottomLogo: true, style: 'template', jpegQuality: 0.92 },
   warning: {
     text: 'This booth contains sudden frightening images and loud sounds. It is not recommended for anyone with heart conditions, anxiety, or sensitivity to sudden noise or startling visuals. Photos are stored on this computer only.',
   },
@@ -176,7 +176,7 @@ function sanitizeSettings(s) {
   const m = deepMerge(DEFAULT_SETTINGS, s || {});
   const t = m.timing;
   const out = {
-    version: 9,
+    version: 10,
     theme: { name: m.theme.name === 'horror' ? 'horror' : 'romance' },
     camera: {
       deviceId: str(m.camera.deviceId, 300), label: str(m.camera.label, 300),
@@ -255,7 +255,7 @@ function sanitizeSettings(s) {
     scares: { active: str(m.scares.active, 300, 'builtin/pale-lady-alpha.webm'), profiles: {} },
     strip: {
       title: str(m.strip.title, 40, 'Till Death Do Us Part'), footer: str(m.strip.footer, 80, ''),
-      showDate: bool(m.strip.showDate, true), bottomLogo: bool(m.strip.bottomLogo, true), style: ['theme', 'romance', 'dark'].includes(m.strip.style) ? m.strip.style : 'dark', jpegQuality: clamp(m.strip.jpegQuality, 0.6, 1, 0.92),
+      showDate: bool(m.strip.showDate, true), bottomLogo: bool(m.strip.bottomLogo, true), style: ['template', 'theme', 'romance', 'dark'].includes(m.strip.style) ? m.strip.style : 'template', jpegQuality: clamp(m.strip.jpegQuality, 0.6, 1, 0.92),
     },
     warning: { text: str(m.warning.text, 800, DEFAULT_SETTINGS.warning.text) },
   };
@@ -306,6 +306,10 @@ try {
   if (!raw.version || raw.version < 9) {
     // dark strip frame that blends into the black logo band
     raw.strip = raw.strip || {}; raw.strip.style = 'dark';
+  }
+  if (!raw.version || raw.version < 10) {
+    // the rose-stained "Till Death Do Us Part" strip design
+    raw.strip = raw.strip || {}; raw.strip.style = 'template';
   }
   settings = sanitizeSettings(raw);
   log('Loaded settings from', SETTINGS_FILE);

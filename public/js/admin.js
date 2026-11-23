@@ -60,6 +60,7 @@
     payload = p; settings = p.settings;
     $('#stripsPerPrintRow').hidden = settings.print.layout !== '4x6-double';
     $('#askRows').hidden = !settings.print.askGuests;
+    $('#tplNote').hidden = settings.strip.style !== 'template';
     updateDnpNote();
     activeId = p.scare ? p.scare.id : null;
     if (!(keepLocal && sameScare && profile)) profile = p.scare ? p.scare.profile : null;

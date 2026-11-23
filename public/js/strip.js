@@ -255,7 +255,67 @@
     return { blob, canvas: c };
   }
 
+  // ------------------------------------------------------------------ designed template strip
+  // A finished strip design (public/assets/strip-template.png, 1:3) with four solid-black photo windows.
+  // The windows are found automatically, so a new design only needs black boxes where the photos go.
+  const TEMPLATE_URL = '/assets/strip-template.png?v=rose-stained-1';
+  // window positions of the supplied design (fractions of width/height), used if detection fails
+  const TEMPLATE_FALLBACK = [[41, 304, 642, 367], [41, 696, 642, 355], [41, 1077, 642, 355], [41, 1457, 643, 357]]
+    .map(([x, y, w, h]) => ({ x: x / 724, y: y / 2172, w: w / 724, h: h / 2172 }));
+
+  /** Find the four big black rectangles in the template (as fractions of its size). */
+  function findWindows(img) {
+    const iw = img.naturalWidth, ih = img.naturalHeight, k = Math.min(1, 600 / iw);
+    const c = document.createElement('canvas'); c.width = Math.round(iw * k); c.height = Math.round(ih * k);
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+    const { data } = x.getImageData(0, 0, c.width, c.height), W = c.width, H = c.height;
+    const dark = (px, py) => { const i = (py * W + px) * 4; return Math.max(data[i], data[i + 1], data[i + 2]) < 28; };
+    // rows where most of the middle half is black belong to a window
+    const rowDark = [];
+    for (let y = 0; y < H; y++) { let n = 0; for (let px = Math.floor(W * 0.25); px < W * 0.75; px++) if (dark(px, y)) n++; rowDark.push(n > W * 0.45); }
+    const boxes = [];
+    for (let y = 0; y < H; y++) {
+      if (!rowDark[y]) continue;
+      let y1 = y; while (y1 + 1 < H && rowDark[y1 + 1]) y1++;
+      if (y1 - y > H * 0.04) {
+        const my = Math.floor((y + y1) / 2);
+        let x0 = Math.floor(W / 2), x1 = x0;
+        while (x0 > 0 && dark(x0 - 1, my)) x0--;
+        while (x1 < W - 1 && dark(x1 + 1, my)) x1++;
+        boxes.push({ x: x0 / W, y: y / H, w: (x1 - x0 + 1) / W, h: (y1 - y + 1) / H });
+      }
+      y = y1;
+    }
+    return boxes.length === 4 ? boxes : null;
+  }
+
+  async function buildTemplateStrip(photos, reaction, opts) {
+    const tpl = await loadImage(TEMPLATE_URL);
+    const wins = findWindows(tpl) || TEMPLATE_FALLBACK;
+    const W = 1200, H = 3600;
+    const rects = wins.map(b => {
+      // grow 2 px so no black edge of the window peeks out around the photo
+      const g = 2;
+      return { x: Math.round(b.x * W) - g, y: Math.round(b.y * H) - g, w: Math.round(b.w * W) + g * 2, h: Math.round(b.h * H) + g * 2 };
+    });
+    const imgs = await Promise.all([...photos.slice(0, 3), reaction].map(loadImage));
+    const ratio = rects.reduce((a, r) => a + r.h / r.w, 0) / rects.length;
+    const focus = await cropFocusAll(imgs, ratio);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(tpl, 0, 0, W, H);
+    imgs.forEach((img, i) => { const r = rects[i]; drawCover(x, img, r.x, r.y, r.w, r.h, focus[i]); });
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', opts.jpegQuality || 0.92));
+    if (!blob) throw new Error('Strip encoding failed');
+    return { blob, canvas: c };
+  }
+
   async function buildStrip({ photos, reaction, strip }) {
+    if (strip && strip.style === 'template') {
+      try { return await buildTemplateStrip(photos, reaction, strip); }
+      catch (e) { console.warn('Strip design failed, using the built-in strip:', e); strip = { ...strip, style: 'dark' }; }
+    }
     const opts = Object.assign({ title: 'ScareBooth', footer: '', showDate: true, jpegQuality: 0.92, bottomLogo: false }, strip || {});
     opts.logo = await loadLogo(opts);
     // strip look can differ from the screens' theme: 'dark' = black-and-red frame that blends into the logo band
