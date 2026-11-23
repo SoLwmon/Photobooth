@@ -258,10 +258,10 @@
   // ------------------------------------------------------------------ designed template strip
   // A finished strip design (public/assets/strip-template.png, 1:3) with four solid-black photo windows.
   // The windows are found automatically, so a new design only needs black boxes where the photos go.
-  const TEMPLATE_URL = '/assets/strip-template.png?v=rose-stained-1';
+  const TEMPLATE_URL = '/assets/strip-template.png?v=sponsors-2';
   // window positions of the supplied design (fractions of width/height), used if detection fails
-  const TEMPLATE_FALLBACK = [[41, 304, 642, 367], [41, 696, 642, 355], [41, 1077, 642, 355], [41, 1457, 643, 357]]
-    .map(([x, y, w, h]) => ({ x: x / 724, y: y / 2172, w: w / 724, h: h / 2172 }));
+  const TEMPLATE_FALLBACK = [[68, 370, 1064, 693], [68, 1094, 1064, 646], [68, 1770, 1064, 642], [68, 2444, 1064, 644]]
+    .map(([x, y, w, h]) => ({ x: x / 1200, y: y / 3600, w: w / 1200, h: h / 3600 }));
 
   /** Find the four big black rectangles in the template (as fractions of its size). */
   function findWindows(img) {
