@@ -258,6 +258,8 @@
   async function buildStrip({ photos, reaction, strip }) {
     const opts = Object.assign({ title: 'ScareBooth', footer: '', showDate: true, jpegQuality: 0.92, bottomLogo: false }, strip || {});
     opts.logo = await loadLogo(opts);
+    // strip look can differ from the screens' theme: 'dark' = black-and-red frame that blends into the logo band
+    if (opts.style === 'dark') opts.theme = 'horror'; else if (opts.style === 'romance') opts.theme = 'romance';
     // photo shape (height ÷ width) for the face-centred crop: wider than 3:2 when the logo takes the bottom
     const ratio = opts.logo ? layoutPhotos([0, 0, 0, 0], 170, 1200, 3600, 60, 3600 - LOGO.band - LOGO.gap).ratio : 720 / 1080;
     if (opts.theme !== 'horror') {

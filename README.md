@@ -195,7 +195,7 @@ Colours and brightness are in the same card. The bulb's status shows *Connected*
 
 ### Strip logo
 
-The strip ends with the **毒爱 · Till Death Do Us Part** logo in a black band across the bottom. The logo already carries the title, so the top of the strip keeps only the date, and the photos are a little wider to make room. Turn it off in the console's **Photo strip** card (*Logo across the bottom*) to go back to the title and footer line. To use different artwork, replace `public/assets/strip-logo.png` with your own image on a black background.
+The strip ends with the **毒爱 · Till Death Do Us Part** logo in a black band across the bottom. The logo already carries the title, so the top of the strip keeps only the date, and the photos are a little wider to make room. Turn it off in the console's **Photo strip** card (*Logo across the bottom*) to go back to the title and footer line. The strip frame is **Dark** by default (black and red, blending into the logo band), whatever the booth theme; choose *Blush pink with roses* under **Strip frame** for the pink look. To use different artwork, replace `public/assets/strip-logo.png` with your own image on a black background.
 
 ## 7. Scare files
 
