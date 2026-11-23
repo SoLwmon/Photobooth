@@ -227,6 +227,36 @@
       </div>
     </section>
 
+    <!-- WIZ BULB -->
+    <section class="card wide" id="wizCard">
+      <h2>WiZ bulb — room colour over Wi-Fi</h2>
+      <div class="lights-layout">
+        <div>
+          <label class="toggle hl"><input type="checkbox" data-path="wiz.enabled"> Control the WiZ bulb from ScareBooth</label>
+          <label>Bulb IP address <span class="muted small">(more than one bulb: separate with commas)</span></label>
+          <div class="inline"><input type="text" data-path="wiz.bulbs" placeholder="e.g. 192.168.0.50" spellcheck="false"><button class="btn small ghost" id="wizFind">Find bulbs</button></div>
+          <div id="wizFound" class="wiz-found" hidden></div>
+          <div class="tunnel-status" id="wizStatus"></div>
+          <div class="light-preview"><div class="lp" id="lpWiz"><i></i><span>WiZ bulb</span></div></div>
+          <div class="actions">
+            <button class="btn small" data-light="scare">⚡ Test jump-scare lights</button>
+            <button class="btn small ghost" data-light="session">Normal (session)</button>
+            <button class="btn small ghost" data-light="idle">Idle</button>
+            <button class="btn small ghost" data-light="off">All off</button>
+          </div>
+          <p class="muted small">The bulb follows the booth: idle colour while waiting, session colour during photos, and red the moment the jump scare hits. Set it up in the WiZ app first (same router as this PC), then give it a fixed address in the router (DHCP reservation) so the IP never changes.</p>
+        </div>
+        <div>
+          <div class="split two">
+            <div><label>Idle colour</label><input type="color" data-path="wiz.idleColor"></div>
+            <div><label>Session colour</label><input type="color" data-path="wiz.sessionColor"></div>
+            <div><label>Jump-scare colour</label><input type="color" data-path="wiz.scareColor"></div>
+            <div><label>Brightness <output data-for-path="wiz.brightness"></output>%</label><input type="range" min="10" max="100" step="1" data-path="wiz.brightness"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- PROMPTS -->
     <section class="card">
       <h2>Questions on the main display</h2>
@@ -284,11 +314,14 @@
       <select data-path="print.timeoutCopies"><option value="0">Nothing (no prints)</option><option value="1">1 copy</option><option value="2">2 copies</option><option value="3">3 copies</option><option value="4">4 copies</option><option value="5">5 copies</option><option value="6">6 copies</option></select>
       <label>Paper layout</label>
       <select data-path="print.layout">
-        <option value="4x6-double">4×6 in sheet, two strips side by side (photo printers with 2-inch cut)</option>
+        <option value="4x6-double">4R sheet → two 2×6 strips, cut by the printer (DNP DS-RX1HS)</option>
         <option value="4x6-single">4×6 in sheet, one strip in the middle</option>
         <option value="2x6">2×6 in strip paper</option>
       </select>
-      <p class="muted small">Reprint any past strip from the <a href="/gallery" target="_blank" style="color:#ffb3b8">gallery</a>. Set paper size and borderless in the printer’s Windows <i>Printing preferences</i> — ScareBooth also picks a 4×6 / 2×6 paper size automatically when the driver offers one. With the two-per-sheet layout, 3 prints uses 2 sheets.</p>
+      <div id="stripsPerPrintRow"><label>Each print gives the guests</label>
+      <select data-path="print.stripsPerPrint"><option value="2">2 strips (one 4R sheet, cut in two)</option><option value="1">1 strip (strips counted singly; 3 prints uses 2 sheets)</option></select></div>
+      <p class="muted small" id="dnpNote" hidden><b style="color:#f3d6a0">DNP printer:</b> open <i>Printing preferences → Advanced</i>, set <b>Paper Size: PR (4x6)</b> and <b>2inch cut: Enable</b>, then OK. ScareBooth picks PR (4x6) for you, but the cut switch lives in the driver. Press <b>Test print</b> — two separate strips should come out.</p>
+      <p class="muted small">Reprint any past strip from the <a href="/gallery" target="_blank" style="color:#ffb3b8">gallery</a>. Set paper size and borderless in the printer’s Windows <i>Printing preferences</i> — ScareBooth also picks a 4×6 / 2×6 paper size automatically when the driver offers one. </p>
       <div class="actions"><button class="btn small" data-cmd="testPrint">🖨 Test print</button><span class="muted" id="printCount"></span><button class="btn small ghost" id="resetPrints">Reset counter</button></div>
     </section>
 

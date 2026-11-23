@@ -58,6 +58,8 @@
     const keepLocal = drag || performance.now() - lastLocalEdit < 700;
     const sameScare = p.scare && activeId === p.scare.id;
     payload = p; settings = p.settings;
+    $('#stripsPerPrintRow').hidden = settings.print.layout !== '4x6-double';
+    updateDnpNote();
     activeId = p.scare ? p.scare.id : null;
     if (!(keepLocal && sameScare && profile)) profile = p.scare ? p.scare.profile : null;
     else payload = { ...p, scare: { ...p.scare, profile } };
@@ -351,7 +353,7 @@
     const hostHtml = `<option value="">Automatic (${esc(s.shareHost)})</option>` + s.urls.map(u => `<option value="${esc(u.ip)}">${esc(u.ip)} — ${esc(u.iface)}</option>`).join('');
     if (hs.dataset.html !== hostHtml) { hs.innerHTML = hostHtml; hs.dataset.html = hostHtml; if (settings) hs.value = settings.share.host; }
     $('#printCount').textContent = `Sheets printed: ${s.prints}`;
-    renderLights(s.lights); renderMicSelect();
+    renderLights(s.lights); renderWiz(s.wiz); renderMicSelect();
     const t = s.tunnel || {};
     const label = { online: 'Internet link online', starting: 'Connecting…', offline: 'Internet link offline', missing: 'Tunnel tool not installed', off: 'Internet link off (booth Wi-Fi only)' }[t.status] || t.status;
     const ts = $('#tunnelStatus');
@@ -373,7 +375,7 @@
   $('#lightsRefresh').addEventListener('click', loadLightPorts);
   $('#lightsReconnect').addEventListener('click', () => api('/api/lights/reconnect', { json: {} }).then(() => toast('Reconnecting to the lights…', true)).catch(e => toast(e.message)));
   for (const b of $$('[data-light]')) b.addEventListener('click', async () => {
-    if (!settings.lights.enabled) return toast('Turn on “Control the lights from ScareBooth” first.');
+    if (!settings.lights.enabled && !settings.wiz.enabled) return toast('Turn on the lights box or the WiZ bulb first.');
     const ms = b.dataset.light === 'scare' ? Math.round(settings.timing.burstDurationSec * 1000 + settings.lights.scareFlashExtraMs) : settings.timing.flashMs;
     try { await api('/api/lights/cue', { json: { cue: b.dataset.light, ms } }); } catch (e) { toast(e.message); }
     if (b.dataset.light === 'scare') setTimeout(() => api('/api/lights/cue', { json: { cue: 'session' } }).catch(() => {}), ms + settings.lights.revertDelayMs);
@@ -396,6 +398,37 @@
     $('#lpFlash i').style.background = f ? `rgba(255,255,255,${0.3 + 0.7 * f})` : '#1a1112';
     $('#lpFlash i').style.boxShadow = f ? '0 0 30px #fff' : 'none';
   }
+
+  // ---- WiZ bulb
+  function renderWiz(W) {
+    if (!W) return;
+    const st = $('#wizStatus'), on = W.bulbs.filter(b => b.online).length;
+    st.className = 'tunnel-status ' + (!W.enabled ? 'off' : on ? 'online' : 'offline');
+    st.innerHTML = `<b><span class="dot"></span>${!W.enabled ? 'WiZ control is off' : !W.bulbs.length ? 'No bulb set' : on === W.bulbs.length ? 'Connected — ' + W.bulbs.map(b => esc(b.ip)).join(', ') : `${on} of ${W.bulbs.length} bulb(s) answering`}</b>` +
+      (W.bulbs.length > 1 || (W.enabled && on < W.bulbs.length) ? `<div class="muted small">${W.bulbs.map(b => `${esc(b.ip)}: ${b.online ? 'online' : 'not answering'}`).join(' · ')}</div>` : '') +
+      (W.message && !(W.enabled && W.bulbs.length && on) ? `<div class="muted small">${esc(W.message)}</div>` : '');
+    const k = W.look || {}, i = $('#lpWiz i');
+    if (k.on && W.enabled) { const a = 0.35 + 0.65 * (k.dimming || 0) / 100; i.style.background = k.color; i.style.opacity = a; i.style.boxShadow = `0 0 26px ${k.color}`; }
+    else { i.style.background = '#1a1112'; i.style.opacity = 1; i.style.boxShadow = 'none'; }
+  }
+  $('#wizFind').addEventListener('click', async (e) => {
+    const btn = e.currentTarget, box = $('#wizFound');
+    btn.disabled = true; btn.textContent = 'Searching…';
+    try {
+      const r = await api('/api/wiz/discover', { json: {} });
+      box.hidden = false;
+      box.innerHTML = r.bulbs.length
+        ? r.bulbs.map(b => `<div><b>${esc(b.ip)}</b> <span class="muted small">${esc(b.module || '')} ${esc(b.mac || '')}</span> <button class="btn small ghost" data-wiz-ip="${esc(b.ip)}">Use</button></div>`).join('')
+        : '<span class="muted small">No WiZ bulbs answered. Check the bulb is on, set up in the WiZ app, and on the same router as this PC (not a guest network).</span>';
+      for (const u of $$('[data-wiz-ip]', box)) u.addEventListener('click', () => {
+        const cur = (settings.wiz.bulbs || '').split(/[\s,;]+/).filter(Boolean);
+        if (!cur.includes(u.dataset.wizIp)) cur.push(u.dataset.wizIp);
+        savePatch({ wiz: { bulbs: cur.join(', '), enabled: true } });
+        toast('Bulb added — press “Test jump-scare lights”.', true);
+      });
+    } catch (err) { toast(err.message); }
+    btn.disabled = false; btn.textContent = 'Find bulbs';
+  });
 
   // ---- microphones (listed by the display page)
   function renderMicSelect() {
@@ -445,6 +478,11 @@
       (smooth ? '' : '<br>' + tips.join('<br>'));
   }
 
+  let lastPrinters = null;
+  function updateDnpNote() {
+    const name = (settings && settings.print.printerName) || (lastPrinters && lastPrinters.default) || '';
+    const el = $('#dnpNote'); if (el) el.hidden = !/dnp|ds-?rx1|ds-?620|ds-?40|ds-?820/i.test(name);
+  }
   async function loadPrinters() {
     const sel = $('#printerSelect'), note = $('#printerNote');
     note.textContent = 'Looking for printers…';
@@ -456,6 +494,8 @@
         (cur && !r.printers.includes(cur) ? `<option value="${esc(cur)}">${esc(cur)} (not found)</option>` : '');
       sel.value = cur;
       const pdfDefault = !cur && /pdf|xps|onenote|fax/i.test(r.default || '');
+      lastPrinters = r;
+      updateDnpNote();
       note.innerHTML = pdfDefault ? '<span style="color:#f3d6a0">The Windows default is a PDF/virtual printer — pick your photo printer above.</span>' : `${r.printers.length} printer(s) found.`;
     } catch (e) {
       sel.innerHTML = `<option value="${esc(settings ? settings.print.printerName : '')}">${esc((settings && settings.print.printerName) || 'Windows default printer')}</option>`;

@@ -18,6 +18,7 @@ const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
 const https = require('https');
 const { Lights } = require('./lights');
+const { Wiz } = require('./wiz');
 const IS_WIN = process.platform === 'win32';
 const PRINT_MOCK = process.env.SCAREBOOTH_PRINT_MOCK === '1'; // testing without a printer
 
@@ -121,8 +122,9 @@ const DEFAULT_SETTINGS = {
     idleColor: '#ff4f8b', sessionColor: '#ffb3c9', scareColor: '#ff0000',
     flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300,
   },
+  wiz: { enabled: false, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000' },
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
-  print: { enabled: false, maxCopies: 4, layout: '4x6-double', timeoutCopies: 1, method: 'direct', printerName: '' },
+  print: { enabled: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '' },
   scares: { active: 'builtin/pale-lady-alpha.webm', profiles: {} },
   strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, jpegQuality: 0.92 },
   warning: {
@@ -225,6 +227,14 @@ function sanitizeSettings(s) {
         revertDelayMs: Math.round(clamp(L.revertDelayMs, 0, 10000, 300)),
       };
     })(),
+    wiz: (() => {
+      const W = m.wiz || {}, col = (v, d) => (/^#[0-9a-f]{6}$/i.test(v || '') ? v : d);
+      return {
+        enabled: bool(W.enabled, false), bulbs: String(W.bulbs || '').replace(/[^\d., ]/g, '').slice(0, 200),
+        brightness: Math.round(clamp(W.brightness, 10, 100, 80)),
+        idleColor: col(W.idleColor, '#ff4f8b'), sessionColor: col(W.sessionColor, '#ffc9a8'), scareColor: col(W.scareColor, '#ff0000'),
+      };
+    })(),
     share: {
       enabled: bool(m.share.enabled, true),
       mode: m.share.mode === 'wifi' ? 'wifi' : 'auto',
@@ -236,6 +246,7 @@ function sanitizeSettings(s) {
     print: {
       enabled: bool(m.print.enabled, false), maxCopies: Math.round(clamp(m.print.maxCopies, 1, 10, 4)),
       layout: ['4x6-double', '4x6-single', '2x6'].includes(m.print.layout) ? m.print.layout : '4x6-double',
+      stripsPerPrint: Number(m.print.stripsPerPrint) === 1 ? 1 : 2,
       timeoutCopies: Math.round(clamp(m.print.timeoutCopies, 0, 10, 1)),
       method: m.print.method === 'browser' ? 'browser' : 'direct',
       printerName: str(m.print.printerName, 200),
@@ -362,13 +373,13 @@ let lastScarePerf = null; // how smoothly the last scare played (console)
 function statusPayload() {
   const counts = { display: 0, controller: 0, admin: 0 };
   for (const c of clients.values()) counts[c.role] = (counts[c.role] || 0) + 1;
-  return { clients: counts, displayOnline: displayOnline(), camera: cameraStatus, urls: lanUrls(), tunnel: tunnelInfo(), lights: lights.info(), shareHost: shareHost(), prints: printCounter.total || 0, phase: state.phase, sessionId: state.sessionId, lastScarePerf };
+  return { clients: counts, displayOnline: displayOnline(), camera: cameraStatus, urls: lanUrls(), tunnel: tunnelInfo(), lights: lights.info(), wiz: wiz.info(), shareHost: shareHost(), prints: printCounter.total || 0, phase: state.phase, sessionId: state.sessionId, lastScarePerf };
 }
 function broadcastStatus() { broadcast('status', statusPayload(), ['admin']); }
 function settingsPayload() {
   return { settings, scare: activeScare(), scares: listScares(), sounds: listSounds() };
 }
-function broadcastSettings() { broadcast('settings', settingsPayload()); if (typeof lights !== 'undefined') lights.configure(settings); }
+function broadcastSettings() { broadcast('settings', settingsPayload()); if (typeof lights !== 'undefined') { lights.configure(settings); wiz.configure(settings); } }
 
 setInterval(() => { for (const c of clients.values()) { try { c.res.write(': ping\n\n'); } catch (_) {} } }, 15000);
 
@@ -420,6 +431,13 @@ let lightsBroadcastTimer = null;
 lights.on('change', () => { if (!lightsBroadcastTimer) lightsBroadcastTimer = setTimeout(() => { lightsBroadcastTimer = null; broadcastStatus(); }, 120); });
 lights.on('connected', () => lights.cue(state.phase === 'idle' ? 'idle' : 'session'));
 setTimeout(() => lights.configure(settings), 200);
+// WiZ bulbs on the Wi-Fi (optional, alongside or instead of the USB lights box)
+const wiz = new Wiz({ log });
+let wizBroadcastTimer = null;
+wiz.on('change', () => { if (!wizBroadcastTimer) wizBroadcastTimer = setTimeout(() => { wizBroadcastTimer = null; broadcastStatus(); }, 150); });
+setTimeout(() => { wiz.configure(settings); wiz.cue(state.phase === 'idle' ? 'idle' : 'session'); }, 300);
+/** One light moment for everything: the USB lights box and the WiZ bulbs. */
+function lightCue(name, opts) { lights.cue(name, opts); wiz.cue(name); }
 let watchdog = null, inactivityTimer = null, doneTimer = null, nextShotTimer = null, retryCount = 0;
 
 function publicState() {
@@ -430,7 +448,7 @@ function publicState() {
     shareUrl: settings.share.enabled && state.stripUrl ? shareUrlFor(state.shareToken) : null,
     shareOnline: shareOnline(),
     printStatus: state.printStatus, printCopies: state.printCopies, printMax: settings.print.maxCopies, printAuto: state.printAuto,
-    printDefault: settings.print.timeoutCopies, doneTimeoutSec: settings.timing.doneTimeoutSec, chooseTimeoutSec: settings.timing.chooseTimeoutSec,
+    printDefault: settings.print.timeoutCopies, stripsPerPrint: settings.print.layout === '4x6-double' ? settings.print.stripsPerPrint : 1, doneTimeoutSec: settings.timing.doneTimeoutSec, chooseTimeoutSec: settings.timing.chooseTimeoutSec,
     updatedAt: state.updatedAt,
   };
 }
@@ -438,8 +456,8 @@ let lastLightPhase = null;
 function setState(patch) {
   Object.assign(state, patch, { updatedAt: Date.now() });
   if (state.phase !== lastLightPhase) {
-    if (state.phase === 'idle') lights.cue('idle');
-    else if (lastLightPhase === 'idle' || lastLightPhase === 'warning' || lastLightPhase === null) lights.cue('session');
+    if (state.phase === 'idle') lightCue('idle');
+    else if (lastLightPhase === 'idle' || lastLightPhase === 'warning' || lastLightPhase === null) lightCue('session');
     lastLightPhase = state.phase;
   }
   broadcast('state', publicState());
@@ -614,7 +632,9 @@ function runPowerShell(script, args, timeoutMs) {
       });
   });
 }
-function perSheet(layout) { return layout === '4x6-double' ? 2 : 1; }
+// 4x6-double: two strips side by side on one 4R sheet; the printer's 2-inch cut splits them.
+// stripsPerPrint 2 → each print is a whole sheet (2 strips); 1 → strips are counted singly (3 prints = 2 sheets).
+function perSheet(layout) { return layout === '4x6-double' && settings.print.stripsPerPrint === 1 ? 2 : 1; }
 /** Queue a direct print job; resolves with the number of sheets printed. */
 function directPrint(imagePath, copies, layout, jobName) {
   const sheets = Math.ceil(copies / perSheet(layout));
@@ -1029,9 +1049,14 @@ async function route(req, res) {
     if (!adminAllowed(req)) return forbidden(res);
     const body = await readJson(req);
     if (!['idle', 'session', 'flash', 'scare', 'off'].includes(body.cue)) return json(res, 400, { ok: false, error: 'Unknown light cue' });
-    if (!settings.lights.enabled) return json(res, 200, { ok: true, skipped: 'lights off' });
-    lights.cue(body.cue, { ms: Number(body.ms) || undefined });
+    if (!settings.lights.enabled && !settings.wiz.enabled) return json(res, 200, { ok: true, skipped: 'lights off' });
+    if (settings.lights.enabled) lights.cue(body.cue, { ms: Number(body.ms) || undefined });
+    wiz.cue(body.cue);
     return json(res, 200, { ok: true });
+  }
+  if (p === '/api/wiz/discover' && req.method === 'POST') {
+    if (!adminAllowed(req)) return forbidden(res);
+    return json(res, 200, { ok: true, bulbs: await wiz.discover() });
   }
   if (p === '/api/lights/raw' && req.method === 'POST') {
     if (!adminAllowed(req)) return forbidden(res);
@@ -1405,7 +1430,7 @@ setInterval(() => { // react to console changes
   if (k !== lastShareKey) { lastShareKey = k; tunnel.restarts = 0; startTunnel(); }
 }, 1000);
 
-function shutdown() { log('Shutting down'); stopTunnel(); try { lights.disconnect(); } catch (_) {} try { saveSettings(); } catch (_) {} process.exit(0); }
+function shutdown() { log('Shutting down'); stopTunnel(); try { lights.disconnect(); } catch (_) {} try { wiz.close(); } catch (_) {} try { saveSettings(); } catch (_) {} process.exit(0); }
 process.on('exit', () => { try { tunnel.proc && tunnel.proc.kill(); } catch (_) {} });
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

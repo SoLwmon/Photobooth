@@ -96,3 +96,4 @@ html, body { background: radial-gradient(ellipse at 50% 0%, #2a0a0e 0%, #0b0506 
 .choose-hint b { color: var(--bone); }
 #chooseTimer { margin-top: 1vh; }
 .theme-romance.ipad .thumbs.few button { border-radius: 14px; background: #fff; }
+.print-each { margin: -1vh 0 2vh; font-size: 20px; opacity: .8; }

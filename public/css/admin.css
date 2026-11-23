@@ -91,3 +91,7 @@ legend label { margin: 0; }
 .scare-perf.good { border-color: #2e6b3a; }
 .scare-perf.bad { border-color: var(--crimson-hi); }
 .scare-perf b { color: #fff; }
+.wiz-found { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #0a0607; display: grid; gap: 6px; }
+.wiz-found > div { display: flex; align-items: center; gap: 10px; }
+.wiz-found .btn { margin-left: auto; }
+#wizCard .inline input[type=text] { flex: 1; }

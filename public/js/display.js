@@ -284,7 +284,9 @@
   function runPrint(cmd) { printQueue = printQueue.then(() => doPrint(cmd)); return printQueue; }
   async function doPrint(cmd) {
     const L = PRINT_LAYOUTS[cmd.layout] || PRINT_LAYOUTS['4x6-double'];
-    const sheets = Math.ceil(cmd.copies / L.perSheet);
+    // 4x6-double: each print is a whole sheet (2 strips, cut by the printer) unless strips are counted singly
+    const per = cmd.layout === '4x6-double' && !(settings && settings.print && settings.print.stripsPerPrint === 1) ? 1 : L.perSheet;
+    const sheets = Math.ceil(cmd.copies / per);
     try {
       for (let i = 0; i < sheets; i++) { await printSheet(cmd.stripUrl, cmd.layout); await sleep(800); }
       if (cmd.cmd === 'testPrint') report({ type: 'testResult', ok: true, kind: 'print', message: 'Test page sent to the default printer.' });

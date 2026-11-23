@@ -103,6 +103,7 @@
   function renderDone(s) {
     const asking = s.printStatus === 'ask';
     $('#printAsk').hidden = !asking;
+    $('#printEach').hidden = !(asking && s.stripsPerPrint === 2);
     if (asking && $('#copyBtns').dataset.max !== String(s.printMax)) {
       $('#copyBtns').dataset.max = s.printMax;
       $('#copyBtns').innerHTML = `<button class="btn ghost none" data-copies="0">No prints</button>` +
@@ -110,7 +111,7 @@
     }
     $('#printStatus').textContent = {
       ask: s.printDefault > 0 ? `If you don’t choose, we’ll print ${s.printDefault} for you.` : '',
-      printing: `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}${s.printAuto ? ' (automatic)' : ''}…`,
+      printing: `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}${s.stripsPerPrint === 2 ? ` (${s.printCopies * 2} strips)` : ''}${s.printAuto ? ' (automatic)' : ''}…`,
       printed: 'Printed! Collect your strips from the printer.',
       error: 'There was a printing problem — please ask a staff member.',
     }[s.printStatus] || '';

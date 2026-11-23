@@ -21,13 +21,25 @@ try {
   $doc.PrintController = New-Object System.Drawing.Printing.StandardPrintController
 
   # Pick the matching paper size if the driver offers it (sizes are in 1/100 inch).
+  # DNP DS-RX1HS / DS620 / DS40: the 2-inch cut only works with the "PR (4x6)" or "(6x4)" paper size,
+  # so those names are preferred. PR (4x6) is a little over 4x6 (105 x 156 mm), hence the 20 tolerance.
   $wantW = 400; if ($Layout -eq '2x6') { $wantW = 200 }
   $wantH = 600
   $match = $null
-  foreach ($ps in $doc.PrinterSettings.PaperSizes) {
-    $fits = ([math]::Abs($ps.Width - $wantW) -le 15 -and [math]::Abs($ps.Height - $wantH) -le 15) -or
-            ([math]::Abs($ps.Width - $wantH) -le 15 -and [math]::Abs($ps.Height - $wantW) -le 15)
-    if ($fits) { $match = $ps; break }
+  $sizes = @($doc.PrinterSettings.PaperSizes)
+  if ($Layout -ne '2x6') {
+    foreach ($pat in @('^\s*PR\s*\(?\s*4\s*x\s*6\s*\)?\s*$', '^\s*\(?\s*6\s*x\s*4\s*\)?\s*$')) {
+      if (-not $match) { $match = $sizes | Where-Object { $_.PaperName -match $pat } | Select-Object -First 1 }
+    }
+  } else {
+    $match = $sizes | Where-Object { $_.PaperName -match '^\s*\(?\s*(2\s*x\s*6|6\s*x\s*2)' } | Select-Object -First 1
+  }
+  if (-not $match) {
+    foreach ($ps in $sizes) {
+      $fits = ([math]::Abs($ps.Width - $wantW) -le 20 -and [math]::Abs($ps.Height - $wantH) -le 20) -or
+              ([math]::Abs($ps.Width - $wantH) -le 20 -and [math]::Abs($ps.Height - $wantW) -le 20)
+      if ($fits) { $match = $ps; break }
+    }
   }
   if ($match) { $doc.DefaultPageSettings.PaperSize = $match }
   $doc.DefaultPageSettings.Landscape = $false
@@ -65,7 +77,8 @@ try {
 
   $doc.Print()
   $script:img.Dispose()
-  Write-Output ("OK " + $doc.PrinterSettings.PrinterName)
+  $paperName = '(driver default)'; if ($match) { $paperName = $match.PaperName }
+  Write-Output ("OK " + $doc.PrinterSettings.PrinterName + " | paper: " + $paperName)
   exit 0
 } catch {
   Write-Output ("ERROR: " + $_.Exception.Message)

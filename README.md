@@ -109,6 +109,7 @@ Each session is recorded from Start until the last photo: the camera picture plu
 | **Timing & photos** | Answer time after each question (6 s), countdown (3 s), screen flash on/off and its length, how many photos are taken around each flash (8), when the scare strikes during the final countdown, the number of jump-scare reaction photos (6), and the optional warning screen and iPad picker.  **Black flash before the scare** (default 200 ms, 0 = off): on the last photo the screen cuts to black for a moment and comes back with the scare already there, so it appears out of nowhere. For “3, 2, black, scare”, set *Scare strikes* earliest and latest to about 2.0 s with a 3 s countdown.|
 | **Session video** | Record on/off, sound on/off, which microphone, video quality, and whether to keep every burst photo (not only the best). |
 | **Lights** | Connect the ScareBooth Lights box (or the Simulator), live preview of the room light, strip and flash, test buttons (including **⚡ Test jump-scare lights**), colours, brightness, LED count, and timing. |
+| **WiZ bulb** | Find WiZ bulbs on the network, connection status, live colour preview, idle / session / jump-scare colours and brightness, test buttons. |
 | **Questions on the main display** | Edit the four questions the couple answers (and the optional warning text). |
 | **Photo strip** | Set the title, footer line and whether the date shows. **Preview strip design** shows a sample. |
 
@@ -147,15 +148,17 @@ ScareBooth sends each strip **straight to the printer**. The booth PC prints it 
 
 1. **Install the printer on Windows** with the manufacturer's driver. Plug it into the PC by **USB**, and check that it prints a Windows test page.
 2. **Set the paper in the printer's Windows preferences** (*Settings → Printers & scanners → your printer → Printing preferences*): paper **4×6 in** (or 2×6), **borderless** if available, and **2-inch cut** on dye-sub photobooth printers. ScareBooth also picks a matching 4×6 or 2×6 paper size automatically when the driver offers one.
+
+   **DNP DS-RX1HS (two 2×6 strips from one 4R sheet):** load the **6-inch (4×6 / 6×8) media**. In *Printing preferences → Layout → Advanced*: **Paper Size: PR (4x6)**, **2inch cut: Enable**, **Border: Disable**, then OK and Apply. ScareBooth always picks *PR (4x6)* itself (or *(6x4)*, the other size DNP can cut), but the **2inch cut** switch only exists in the driver, so it must be set there once. The console shows this reminder when a DNP printer is selected.
 3. In the console under **Printing**:
    - Tick **Ask guests how many prints they want**.
    - Leave **Print method** on **Straight to the printer**.
    - Choose your **Printer** from the list (press ↻ if you just plugged it in). If you leave it on *Windows default printer*, make sure the default isn't "Microsoft Print to PDF". The console warns you if it is.
    - Choose the **layout**:
-     - **4×6 sheet, two strips side by side.** This is the usual photobooth setup: the printer cuts the sheet in half. 3 prints uses 2 sheets.
+     - **4R sheet → two 2×6 strips, cut by the printer.** The usual photobooth setup, and the one for the DNP DS-RX1HS: two copies of the strip side by side on one 4R sheet, and the printer's 2-inch cut splits them. Under **Each print gives the guests**, keep **2 strips** so one print = one sheet = two strips (the iPad tells guests *Each print is 2 photo strips*). Choose **1 strip** to count strips singly instead (3 prints = 2 sheets).
      - **4×6 sheet, one strip in the middle.** For ordinary photo printers; trim by hand.
      - **2×6 strip paper.** For printers with native 2×6 paper.
-4. Press **Test print**. A test strip with a red frame prints. If edges are cut off or there are white borders, adjust paper size, borderless and scaling in the printer's preferences.
+4. Press **Test print**. A test strip with a red frame prints (on the DNP: **two separate strips**; if they come out joined, the 2inch cut isn't enabled). If edges are cut off or there are white borders, adjust paper size, borderless and scaling in the printer's preferences.
 5. Choose what happens **if guests don't pick a number** before the strip screen times out: print a default number of copies (1 by default) or nothing. The iPad tells guests this while it waits.
 6. **Reprint any past strip** from the gallery (`http://localhost:8080/gallery`, on the PC): pick the number of copies under the strip and press **Print**.
 7. The console shows a **sheets printed** counter (guest prints and reprints), so you can keep an eye on paper and ribbon.
@@ -178,6 +181,17 @@ ScareBooth controls a small **USB lights box** (an ESP32 board, about RM30, plus
 | After the reaction photos | back on | soft pink | off |
 
 All colours, levels and timings are in the console's **Lights** card. Choose **Simulator** to try it all without hardware.
+
+### WiZ bulb (Wi-Fi colour bulb)
+
+ScareBooth also drives **WiZ** colour bulbs directly over the booth router, with no cloud, account or internet. The bulb follows the same moments: idle colour while waiting, session colour during photos, **red the instant the jump scare hits**, then back.
+
+1. Set the bulb up in the **WiZ app** on a phone, connected to the **same router as the booth PC** (2.4 GHz, not a guest network). In the app, check *Settings → Security → Allow local communication* is on (it is by default).
+2. In the router, give the bulb a **fixed IP (DHCP reservation)** so its address never changes.
+3. In the console's **WiZ bulb** card, tick **Control the WiZ bulb from ScareBooth** and press **Find bulbs**, then **Use** next to your bulb (or type its IP; several bulbs: separate with commas).
+4. Press **⚡ Test jump-scare lights**. The bulb should turn red, then back to the session colour.
+
+Colours and brightness are in the same card. The bulb's status shows *Connected* when it answers. WiZ bulbs take about 0.1 s to change, so they're used for room colour only; the camera flash stays on the USB lights box.
 
 ## 7. Scare files
 
@@ -299,6 +313,7 @@ Back up or empty the `data` folder between events. You can browse and download e
 
 ## 13. How it's built
 
+- `server/wiz.js` talks to WiZ bulbs over the local network (UDP port 38899).
 - `server/lights.js` talks to the lights box over USB (via `scripts/serial-bridge.ps1`), with a built-in simulator. `hardware/` holds the box's code and build guide.
 - `public/js/best-shot.js` scores each burst (eyes open, exposure, sharpness, faces, reaction) using the bundled offline face models in `public/vendor/face-api/`.
 - `server/server.js` is a dependency-free Node.js server. It handles HTTP, uses Server-Sent Events for live updates, runs the session state machine with watchdogs and timeouts, stores files, and checks settings. You don't need `npm install`.
