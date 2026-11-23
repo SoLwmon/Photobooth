@@ -238,7 +238,7 @@
     $('#qrStep').textContent = wifi ? '2' : '';
     const lines = {
       ask: s.printDefault > 0 ? `How many prints? Choose on the iPad (otherwise we’ll print ${s.printDefault}).` : 'How many prints? Choose on the iPad.',
-      printing: `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}…`,
+      printing: s.printFixed ? `Printing your ${s.printCopies * (s.stripsPerPrint || 1)} photo strips…` : `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}…`,
       printed: 'Your prints are on the way!',
       error: 'There was a printing problem — please ask a staff member.',
     };
@@ -768,7 +768,20 @@
   document.addEventListener('pointerdown', () => { if (!audio.running) checkAudio(); });
   document.addEventListener('keydown', (e) => {
     if (!audio.running) checkAudio();
-    if (e.key === 'f' || e.key === 'F11') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); }
+    // F11 / F: one press toggles full screen. The page handles it itself, so the browser's own F11
+    // full screen and the page's full screen don't fight (that made it take several presses).
+    if (e.key === 'F11' || ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey)) {
+      const browserFull = !document.fullscreenElement && window.matchMedia('(display-mode: fullscreen)').matches;
+      if (browserFull) return; // already full screen from the browser (kiosk / F11): let the browser leave it
+      e.preventDefault();
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+    }
+  });
+  // Double-click anywhere also toggles full screen.
+  document.addEventListener('dblclick', () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else if (!window.matchMedia('(display-mode: fullscreen)').matches) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
   });
   setTimeout(checkAudio, 300);
 

@@ -124,7 +124,7 @@ const DEFAULT_SETTINGS = {
   },
   wiz: { enabled: false, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000' },
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
-  print: { enabled: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '' },
+  print: { enabled: false, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '' },
   scares: { active: 'builtin/pale-lady-alpha.webm', profiles: {} },
   strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, jpegQuality: 0.92 },
   warning: {
@@ -247,6 +247,7 @@ function sanitizeSettings(s) {
       enabled: bool(m.print.enabled, false), maxCopies: Math.round(clamp(m.print.maxCopies, 1, 10, 4)),
       layout: ['4x6-double', '4x6-single', '2x6'].includes(m.print.layout) ? m.print.layout : '4x6-double',
       stripsPerPrint: Number(m.print.stripsPerPrint) === 1 ? 1 : 2,
+      askGuests: bool(m.print.askGuests, false),
       timeoutCopies: Math.round(clamp(m.print.timeoutCopies, 0, 10, 1)),
       method: m.print.method === 'browser' ? 'browser' : 'direct',
       printerName: str(m.print.printerName, 200),
@@ -448,7 +449,7 @@ function publicState() {
     shareUrl: settings.share.enabled && state.stripUrl ? shareUrlFor(state.shareToken) : null,
     shareOnline: shareOnline(),
     printStatus: state.printStatus, printCopies: state.printCopies, printMax: settings.print.maxCopies, printAuto: state.printAuto,
-    printDefault: settings.print.timeoutCopies, stripsPerPrint: settings.print.layout === '4x6-double' ? settings.print.stripsPerPrint : 1, doneTimeoutSec: settings.timing.doneTimeoutSec, chooseTimeoutSec: settings.timing.chooseTimeoutSec,
+    printDefault: settings.print.timeoutCopies, printFixed: settings.print.enabled && !settings.print.askGuests, stripsPerPrint: settings.print.layout === '4x6-double' ? settings.print.stripsPerPrint : 1, doneTimeoutSec: settings.timing.doneTimeoutSec, chooseTimeoutSec: settings.timing.chooseTimeoutSec,
     updatedAt: state.updatedAt,
   };
 }
@@ -824,9 +825,12 @@ function handleDisplayReport(body) {
   if (r.type === 'stripDone') {
     const stripUrl = sessionUrl(state.sessionId, 'strip.jpg');
     const photos = state.photos.slice(); photos[3] = state.reactions[state.selected].url;
-    setState({ phase: 'done', stripUrl, photos, message: '', printStatus: settings.print.enabled ? 'ask' : 'off', printCopies: 0, printAuto: false });
+    const ask = settings.print.enabled && settings.print.askGuests;
+    setState({ phase: 'done', stripUrl, photos, message: '', printStatus: ask ? 'ask' : 'off', printCopies: 0, printAuto: false });
     writeSessionMeta({ completedAt: new Date().toISOString() });
     log('Strip complete for', state.sessionId);
+    // No question: every session gets one print (one 4R sheet = 2 strips with the DNP 2-inch cut).
+    if (settings.print.enabled && !settings.print.askGuests) startPrint(1, false);
     return { ok: true };
   }
   if (r.type === 'printed') {

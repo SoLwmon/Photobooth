@@ -300,7 +300,8 @@
 
     <section class="card">
       <h2>Printing</h2>
-      <label class="toggle hl"><input type="checkbox" data-path="print.enabled"> Ask guests how many prints they want</label>
+      <label class="toggle hl"><input type="checkbox" data-path="print.enabled"> Print strips for guests</label>
+      <label class="toggle"><input type="checkbox" data-path="print.askGuests"> Ask guests how many prints they want (off = every session prints once automatically)</label>
       <label>Print method</label>
       <select data-path="print.method">
         <option value="direct">Straight to the printer (recommended — no dialog, no browser)</option>
@@ -309,9 +310,11 @@
       <label>Printer</label>
       <div class="inline"><select id="printerSelect" data-path="print.printerName"></select><button class="btn small ghost" id="refreshPrinters">↻</button></div>
       <p class="muted small" id="printerNote"></p>
+      <div id="askRows">
       <label>Most prints per session</label><input type="number" min="1" max="10" step="1" data-path="print.maxCopies">
       <label>If guests don’t choose before the strip screen times out, print</label>
       <select data-path="print.timeoutCopies"><option value="0">Nothing (no prints)</option><option value="1">1 copy</option><option value="2">2 copies</option><option value="3">3 copies</option><option value="4">4 copies</option><option value="5">5 copies</option><option value="6">6 copies</option></select>
+      </div>
       <label>Paper layout</label>
       <select data-path="print.layout">
         <option value="4x6-double">4R sheet → two 2×6 strips, cut by the printer (DNP DS-RX1HS)</option>

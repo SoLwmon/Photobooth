@@ -75,7 +75,7 @@ Other options are documented in the comments at the top of that file: the port n
 4. **Photo 4, the jump scare:** the question and countdown start as normal, but the **jump-scare video cuts in early**, at a random moment during the countdown. At the same instant **the room light turns off, the LED strip turns red and the flash light comes on**. 6 reaction photos are taken, then the lights go back to normal. **The booth picks the best reaction itself:** the biggest jump, well lit, sharp, faces visible.
 5. **The session video stops** once the last photo is taken. It's saved on the PC only.
 6. **The strip appears on the main display** and is saved on the PC.
-7. **The iPad asks "How many prints would you like?"** (if printing is on). If nobody answers, the default number prints automatically.
+7. **The strip prints automatically:** one 4R sheet, cut into **2 strips** (if printing is on). If you turn on *Ask guests how many prints they want*, the iPad asks instead.
 8. **QR codes appear** on the main display and the iPad, so guests can download the strip and photos on their phone.
 9. After 25 s, or when someone taps **Start a new session** on the iPad, the booth resets.
 
@@ -151,7 +151,7 @@ ScareBooth sends each strip **straight to the printer**. The booth PC prints it 
 
    **DNP DS-RX1HS (two 2×6 strips from one 4R sheet):** load the **6-inch (4×6 / 6×8) media**. In *Printing preferences → Layout → Advanced*: **Paper Size: PR (4x6)**, **2inch cut: Enable**, **Border: Disable**, then OK and Apply. ScareBooth always picks *PR (4x6)* itself (or *(6x4)*, the other size DNP can cut), but the **2inch cut** switch only exists in the driver, so it must be set there once. The console shows this reminder when a DNP printer is selected.
 3. In the console under **Printing**:
-   - Tick **Ask guests how many prints they want**.
+   - Tick **Print strips for guests**. By default every session prints **once, automatically** (one 4R sheet = **2 strips** with the DNP), with no question on the iPad. Tick **Ask guests how many prints they want** only if you want guests to choose.
    - Leave **Print method** on **Straight to the printer**.
    - Choose your **Printer** from the list (press ↻ if you just plugged it in). If you leave it on *Windows default printer*, make sure the default isn't "Microsoft Print to PDF". The console warns you if it is.
    - Choose the **layout**:
@@ -263,6 +263,7 @@ Back up or empty the `data` folder between events. You can browse and download e
 | Phones can't open the QR link | The phone must be on the same Wi-Fi as the PC (use the *Join Wi-Fi* code). Check the QR uses the right PC address in the console, and run `allow-ipad-access.bat`. |
 | Nothing prints | In the console, check **Print method** is *Straight to the printer* and the right **Printer** is selected (not a PDF printer). Check the printer prints a Windows test page, then use **Test print**. The console shows the exact error if Windows refuses the job. |
 | A print dialog or "Save as PDF" appears | You're on the *Through the display browser* method. Switch to **Straight to the printer**. |
+| Full screen needs several F11 presses | Fixed: on the display, **F11** (or **F**, or a double-click) now switches full screen on and off in one press. `start-scarebooth.bat` opens it full screen already. |
 | Print is cropped or has borders | Set paper size, borderless and scaling in the printer's *Printing preferences*, then **Test print** again. |
 | *Port 8080 is already in use* | ScareBooth is already running in another window. Or set `PORT=8090` at the top of `start-scarebooth.bat`. |
 | Display is on the wrong monitor | See *Two screens on one PC* above. |

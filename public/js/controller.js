@@ -111,7 +111,7 @@
     }
     $('#printStatus').textContent = {
       ask: s.printDefault > 0 ? `If you don’t choose, we’ll print ${s.printDefault} for you.` : '',
-      printing: `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}${s.stripsPerPrint === 2 ? ` (${s.printCopies * 2} strips)` : ''}${s.printAuto ? ' (automatic)' : ''}…`,
+      printing: s.printFixed ? `Printing your ${s.printCopies * (s.stripsPerPrint || 1)} photo ${s.printCopies * (s.stripsPerPrint || 1) === 1 ? 'strip' : 'strips'}…` : `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}${s.stripsPerPrint === 2 ? ` (${s.printCopies * 2} strips)` : ''}${s.printAuto ? ' (automatic)' : ''}…`,
       printed: 'Printed! Collect your strips from the printer.',
       error: 'There was a printing problem — please ask a staff member.',
     }[s.printStatus] || '';
