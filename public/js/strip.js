@@ -69,7 +69,7 @@
 
   // ------------------------------------------------------------------ bottom logo band
   // The logo artwork (public/assets/strip-logo.png) is on black, so it sits in a black band across the bottom.
-  const LOGO = { url: '/assets/strip-logo.png?v=dokuai-1', band: 880, gap: 60 };
+  const LOGO = { url: '/assets/strip-logo.png?v=dokuai-1', band: 600, gap: 55 };
   async function loadLogo(opts) {
     if (!opts.bottomLogo) return null;
     try { return await loadImage(LOGO.url); } catch (_) { return null; }
