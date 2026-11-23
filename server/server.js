@@ -1324,7 +1324,11 @@ server.listen(PORT, '0.0.0.0', () => {
     `  Display (booth monitor):  http://localhost:${PORT}/display`,
     `  Operator console:         http://localhost:${PORT}/admin`,
     '  iPad controller (same Wi-Fi):',
-    ...(lanUrls().length ? lanUrls().map(u => `     ${u.url}    (${u.iface})`) : ['     (no network adapter found — connect the PC to Wi-Fi/LAN)']),
+    ...(() => {
+      // hide VirtualBox / VMware / Hyper-V adapters: the iPad can never reach those
+      const all = lanUrls(), real = all.filter(u => u.rank < 10), list = real.length ? real : all;
+      return list.length ? list.map(u => `     ${u.url}    (${u.iface})`) : ['     (no network adapter found — connect the PC to Wi-Fi/LAN)'];
+    })(),
     '',
     `  Photos are saved in: ${SESSIONS_DIR}`,
     '  Keep this window open while the booth is running. Press Ctrl+C to stop.',
