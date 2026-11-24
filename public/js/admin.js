@@ -128,6 +128,10 @@
   function savePath(el) {
     const p = el.dataset.path;
     if (p.startsWith('prompts.')) return savePatch({ prompts: $$('[data-path^="prompts."]').map(t => t.value) });
+    // per-question timing: save the whole list of four
+    for (const key of ['answerSecs', 'countdownSecs']) {
+      if (p.startsWith(`timing.${key}.`)) return savePatch({ timing: { [key]: [0, 1, 2, 3].map(i => Number($(`[data-path="timing.${key}.${i}"]`).value)) } });
+    }
     const v = readInput(el); if (v === undefined) return;
     savePatch(nest(p, v));
   }

@@ -568,19 +568,21 @@
       showQuestion(cmd.shot, cmd.totalShots, cmd.prompt || state.prompt);
       layerOn('lower');
       await wait(700, token); // let the question land before the timer starts
-      await answerTime(t.answerSec || 0, token);
+      const answerSec = cmd.answerSec ?? (t.answerSecs ? t.answerSecs[cmd.shot - 1] : t.answerSec) ?? 0;
+      const countdownSec = cmd.countdownSec ?? (t.countdownSecs ? t.countdownSecs[cmd.shot - 1] : t.countdownSec) ?? 3;
+      await answerTime(answerSec, token);
       let scareAtMs = 0;
       if (cmd.final) {
         // finish the background best-photo check for photo 3 first, so the scare has the PC to itself
         await Promise.race([pendingWork, sleep(8000)]); check(token);
         scareAtMs = (t.scareAtMinSec + Math.random() * (t.scareAtMaxSec - t.scareAtMinSec)) * 1000;
         const strikeAt = performance.now() + scareAtMs;
-        const interrupted = await countdown(t.countdownSec, token, strikeAt);
+        const interrupted = await countdown(countdownSec, token, strikeAt);
         if (!interrupted) {
           while (performance.now() < strikeAt) { await sleep(Math.min(15, strikeAt - performance.now())); check(token); }
         }
       } else {
-        await countdown(t.countdownSec, token);
+        await countdown(countdownSec, token);
       }
 
       if (!cmd.final) {

@@ -109,7 +109,8 @@ const DEFAULT_SETTINGS = {
   theme: { name: 'romance' },
   prompts: THEME_PRESETS.romance.prompts.slice(),
   timing: {
-    answerSec: 6, countdownSec: 3,
+    answerSec: 6, countdownSec: 3, // fallbacks; each question has its own time below
+    answerSecs: [6, 6, 6, 6], countdownSecs: [3, 3, 3, 3], // per question: time to answer, then countdown
     shotBurstCount: 8, preFlashMs: 250, flashMs: 700, postFlashMs: 300, // photos 1–3: frames before/during/after the screen flash
     scareAtMinSec: 1.2, scareAtMaxSec: 2.6, scareBlackoutMs: 200, // final photo: scare strikes this many seconds into its countdown (random in range)
     burstCount: 6, burstDurationSec: 2.5, chooseTimeoutSec: 45,
@@ -199,6 +200,9 @@ function sanitizeSettings(s) {
       flashMs: Math.round(clamp(t.flashMs, 100, 3000, 700)),
       postFlashMs: Math.round(clamp(t.postFlashMs, 0, 2000, 300)),
       countdownSec: Math.round(clamp(t.countdownSec, 1, 10, 3)),
+      // per question; older settings without them take the single answer/countdown time for all four
+      answerSecs: [0, 1, 2, 3].map(i => clamp((t.answerSecs || [])[i], 0, 60, clamp(t.answerSec, 0, 60, 6))),
+      countdownSecs: [0, 1, 2, 3].map(i => Math.round(clamp((t.countdownSecs || [])[i], 1, 10, Math.round(clamp(t.countdownSec, 1, 10, 3))))),
       scareAtMinSec: clamp(t.scareAtMinSec, 0, 20, 1.2),
       scareAtMaxSec: clamp(t.scareAtMaxSec, 0, 20, 2.6),
       scareBlackoutMs: clamp(t.scareBlackoutMs, 0, 1500, 200),
@@ -579,9 +583,10 @@ function startShot(shot) {
   const t = settings.timing;
   const final = shot === 4;
   const prompt = settings.prompts[shot - 1];
-  const timeout = (1 + t.answerSec + Math.max(t.countdownSec, final ? t.scareAtMaxSec : 0) + 4 + (t.preFlashMs + t.flashMs + t.postFlashMs) / 1000 + (final ? t.burstDurationSec + 40 : 0) + 20) * 1000;
+  const answerSec = t.answerSecs[shot - 1], countdownSec = t.countdownSecs[shot - 1];
+  const timeout = (1 + answerSec + Math.max(countdownSec, final ? t.scareAtMaxSec : 0) + 4 + (t.preFlashMs + t.flashMs + t.postFlashMs) / 1000 + (final ? t.burstDurationSec + 40 : 0) + 20) * 1000;
   setState({ phase: 'shooting', shot, prompt, message: '' });
-  const cmdId = issueCommand({ cmd: 'shoot', shot, final, prompt, totalShots: 4 }, timeout, () => shotFailed('display did not respond in time'));
+  const cmdId = issueCommand({ cmd: 'shoot', shot, final, prompt, totalShots: 4, answerSec, countdownSec }, timeout, () => shotFailed('display did not respond in time'));
   if (!cmdId) failSession('The booth screen isn’t connected. Please ask a staff member for help.');
 }
 

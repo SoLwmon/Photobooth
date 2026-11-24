@@ -95,3 +95,6 @@ legend label { margin: 0; }
 .wiz-found > div { display: flex; align-items: center; gap: 10px; }
 .wiz-found .btn { margin-left: auto; }
 #wizCard .inline input[type=text] { flex: 1; }
+.q-timing { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin: 6px 0 14px; }
+.q-timing label { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; }
+.q-timing input[type=number] { width: 70px; }

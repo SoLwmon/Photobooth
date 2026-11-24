@@ -150,8 +150,7 @@
     <section class="card">
       <h2>Timing &amp; photos</h2>
       <div class="split two">
-        <div><label>Answer time after each question (s)</label><input type="number" min="0" max="60" step="0.5" data-path="timing.answerSec"></div>
-        <div><label>Countdown (s)</label><input type="number" min="1" max="10" step="1" data-path="timing.countdownSec"></div>
+        <div style="grid-column:1/-1"><p class="muted small" style="margin:0">Time to answer and countdown are set for each question in the <b>Questions</b> card.</p></div>
         <div style="grid-column:1/-1"><label class="toggle"><input type="checkbox" data-path="timing.shutterFlash"> Screen flash — the main display flashes for photos 1–3</label></div>
         <div><label>Screen flash colour</label><select data-path="timing.flashColor"><option value="black">Black (a quick blink; faces lit by the room or flash light)</option><option value="white">White (lights up faces, like a flash)</option></select></div>
         <div><label>Photos taken around each flash</label><input type="number" min="1" max="20" step="1" data-path="timing.shotBurstCount"></div>
@@ -261,9 +260,13 @@
     <section class="card">
       <h2>Questions on the main display</h2>
       <label>Photo 1</label><textarea rows="2" data-path="prompts.0"></textarea>
+      <div class="q-timing"><label>Time to answer <input type="number" min="0" max="60" step="0.5" data-path="timing.answerSecs.0"> s</label><label>Countdown <input type="number" min="1" max="10" step="1" data-path="timing.countdownSecs.0"> s</label></div>
       <label>Photo 2</label><textarea rows="2" data-path="prompts.1"></textarea>
+      <div class="q-timing"><label>Time to answer <input type="number" min="0" max="60" step="0.5" data-path="timing.answerSecs.1"> s</label><label>Countdown <input type="number" min="1" max="10" step="1" data-path="timing.countdownSecs.1"> s</label></div>
       <label>Photo 3</label><textarea rows="2" data-path="prompts.2"></textarea>
+      <div class="q-timing"><label>Time to answer <input type="number" min="0" max="60" step="0.5" data-path="timing.answerSecs.2"> s</label><label>Countdown <input type="number" min="1" max="10" step="1" data-path="timing.countdownSecs.2"> s</label></div>
       <label>Photo 4 (the jump scare strikes at a random moment — don’t give it away!)</label><textarea rows="2" data-path="prompts.3"></textarea>
+      <div class="q-timing"><label>Time to answer <input type="number" min="0" max="60" step="0.5" data-path="timing.answerSecs.3"> s</label><label>Countdown <input type="number" min="1" max="10" step="1" data-path="timing.countdownSecs.3"> s</label><span class="muted small">The scare strikes during this countdown (see “Scare strikes” in Timing).</span></div>
       <label>Guest warning text</label><textarea rows="4" data-path="warning.text"></textarea>
     </section>
 
