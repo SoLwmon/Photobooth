@@ -61,11 +61,7 @@
     $('#stripsPerPrintRow').hidden = settings.print.layout !== '4x6-double';
     $('#askRows').hidden = !settings.print.askGuests;
     $('#tplNote').hidden = settings.strip.style !== 'template';
-    for (const k of ['idle', 'session']) {
-      const white = settings.wiz[k + 'Mode'] !== 'color';
-      $(`.wiz-white[data-wiz-mode="${k}"]`).hidden = !white;
-      $(`.wiz-color[data-wiz-mode="${k}"]`).hidden = white;
-    }
+    renderWizSwatches();
     updateDnpNote();
     activeId = p.scare ? p.scare.id : null;
     if (!(keepLocal && sameScare && profile)) profile = p.scare ? p.scare.profile : null;
@@ -412,6 +408,32 @@
     const f = (k.flash || 0) / 255;
     $('#lpFlash i').style.background = f ? `rgba(255,255,255,${0.3 + 0.7 * f})` : '#1a1112';
     $('#lpFlash i').style.boxShadow = f ? '0 0 30px #fff' : 'none';
+  }
+
+  // ---- WiZ bulb colour choices: whites use the bulb's own white LEDs, colours use the colour LEDs
+  const WIZ_WHITES = [['Candle', 2200], ['Warm white', 2700], ['Light warm', 3500], ['Neutral', 4200], ['Cool white', 6500]];
+  const WIZ_COLOURS = { idle: [['Blush pink', '#ff6fa0'], ['Rose', '#ff2d6a']], session: [['Blush pink', '#ff6fa0'], ['Rose', '#ff2d6a']],
+    scare: [['Blood red', '#ff0000'], ['Deep red', '#a80000'], ['Crimson', '#ff1240'], ['Purple', '#7a00ff'], ['Toxic green', '#00ff3c']] };
+  const kHex = (k) => { const t = k / 100, c = v => Math.max(0, Math.min(255, Math.round(v)));
+    const r = t <= 66 ? 255 : 329.7 * Math.pow(t - 60, -0.1332), g = t <= 66 ? 99.47 * Math.log(t) - 161.12 : 288.12 * Math.pow(t - 60, -0.0755), b = t >= 66 ? 255 : t <= 19 ? 0 : 138.52 * Math.log(t - 10) - 305.04;
+    return `rgb(${c(r)},${c(g)},${c(b)})`; };
+  function renderWizSwatches() {
+    const W = settings.wiz;
+    for (const key of ['idle', 'session', 'scare']) {
+      const box = $(`.wiz-swatches[data-wiz-key="${key}"]`); if (!box) continue;
+      const white = key !== 'scare' && W[key + 'Mode'] !== 'color', temp = W[key + 'Temp'], col = (W[key + 'Color'] || '').toLowerCase();
+      const items = [];
+      if (key !== 'scare') for (const [n, k] of WIZ_WHITES) items.push({ n, bg: kHex(k), on: white && Math.abs(temp - k) < 150, patch: { [key + 'Mode']: 'white', [key + 'Temp']: k } });
+      for (const [n, c] of WIZ_COLOURS[key]) items.push({ n, bg: c, on: !white && col === c, patch: key === 'scare' ? { scareColor: c } : { [key + 'Mode']: 'color', [key + 'Color']: c } });
+      const custom = !white && !items.some(i => i.on);
+      box.innerHTML = items.map((i, x) => `<button type="button" class="wiz-sw${i.on ? ' on' : ''}" data-i="${x}"><i style="background:${i.bg}"></i>${esc(i.n)}</button>`).join('') +
+        `<label class="wiz-sw custom${custom ? ' on' : ''}"><i style="background:${esc(W[key + 'Color'] || '#ffffff')}"></i>Custom<input type="color" value="${esc(W[key + 'Color'] || '#ffffff')}"></label>`;
+      $$('button.wiz-sw', box).forEach(b => b.addEventListener('click', () => savePatch({ wiz: items[+b.dataset.i].patch })));
+      $('input[type=color]', box).addEventListener('change', (e) => savePatch({ wiz: key === 'scare' ? { scareColor: e.target.value } : { [key + 'Mode']: 'color', [key + 'Color']: e.target.value } }));
+      const fine = $(`.wiz-white[data-wiz-mode="${key}"]`); if (fine) fine.hidden = !white;
+      const now = $(`[data-wiz-now="${key}"]`);
+      if (now) now.textContent = white ? `— white ${temp} K` : `— colour ${W[key + 'Color']}`;
+    }
   }
 
   // ---- WiZ bulb

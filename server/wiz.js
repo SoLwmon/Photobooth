@@ -106,6 +106,9 @@ class Wiz extends EventEmitter {
 
   setColor(color, dimming) {
     const [r, g, b] = hex(color);
+    // a whitish colour mixed from the colour LEDs looks purple: use the white LEDs instead
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if (mx > 0 && (mx - mn) / mx < 0.22) return this.setWhite(hexToKelvin(r, g, b), dimming);
     const d = Math.max(10, Math.min(100, Math.round(dimming)));
     this.look = { ...this.look, color, dimming: d, on: true };
     this.sendAll('setPilot', { state: true, r, g, b, dimming: d });
@@ -134,7 +137,7 @@ class Wiz extends EventEmitter {
     switch (name) {
       case 'idle': W.idleMode === 'color' ? this.setColor(W.idleColor, W.brightness) : this.setWhite(W.idleTemp, W.brightness); break;
       case 'session': W.sessionMode === 'color' ? this.setColor(W.sessionColor, W.brightness) : this.setWhite(W.sessionTemp, W.brightness); break;
-      case 'scare': this.setColor(W.scareColor, 100); break;
+      case 'scare': this.setColor(W.scareColor, W.scareBrightness || 100); break;
       case 'off': this.setOff(); break;
       case 'flash': return true; // bulbs are too slow to be a camera flash — the flash strip does this
       default: return false;
@@ -163,6 +166,16 @@ function kelvinToHex(k) {
   const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.52 * Math.log(t - 10) - 305.04;
   const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
   return '#' + c(r) + c(g) + c(b);
+}
+
+/** Approximate colour temperature of a whitish colour (McCamy). */
+function hexToKelvin(r, g, b) {
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const R = lin(r), G = lin(g), B = lin(b);
+  const X = 0.4124 * R + 0.3576 * G + 0.1805 * B, Y = 0.2126 * R + 0.7152 * G + 0.0722 * B, Z = 0.0193 * R + 0.1192 * G + 0.9505 * B;
+  const s = X + Y + Z; if (!s) return 4000;
+  const x = X / s, y = Y / s, n = (x - 0.3320) / (0.1858 - y);
+  return Math.max(2200, Math.min(6500, 449 * n ** 3 + 3525 * n ** 2 + 6823.3 * n + 5520.33));
 }
 
 function parseIps(s) {

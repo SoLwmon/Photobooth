@@ -249,16 +249,16 @@
         </div>
         <div>
           <div class="split two">
-            <div><label>While waiting</label>
-              <select data-path="wiz.idleMode"><option value="white">White (the bulb’s white LEDs)</option><option value="color">Colour</option></select>
-              <div class="wiz-white" data-wiz-mode="idle"><label>Warm ↔ cool <output data-for-path="wiz.idleTemp"></output> K</label><input type="range" min="2200" max="6500" step="100" data-path="wiz.idleTemp"></div>
-              <div class="wiz-color" data-wiz-mode="idle"><input type="color" data-path="wiz.idleColor"></div></div>
-            <div><label>During photos</label>
-              <select data-path="wiz.sessionMode"><option value="white">White (the bulb’s white LEDs)</option><option value="color">Colour</option></select>
-              <div class="wiz-white" data-wiz-mode="session"><label>Warm ↔ cool <output data-for-path="wiz.sessionTemp"></output> K</label><input type="range" min="2200" max="6500" step="100" data-path="wiz.sessionTemp"></div>
-              <div class="wiz-color" data-wiz-mode="session"><input type="color" data-path="wiz.sessionColor"></div></div>
-            <div><label>Jump-scare colour</label><input type="color" data-path="wiz.scareColor"></div>
-            <div><label>Brightness <output data-for-path="wiz.brightness"></output>%</label><input type="range" min="10" max="100" step="1" data-path="wiz.brightness"></div>
+            <div style="grid-column:1/-1"><label>While waiting <span class="muted small" data-wiz-now="idle"></span></label>
+              <div class="wiz-swatches" data-wiz-key="idle"></div>
+              <div class="wiz-white" data-wiz-mode="idle"><label>Fine-tune warmth <output data-for-path="wiz.idleTemp"></output> K</label><input type="range" min="2200" max="6500" step="100" data-path="wiz.idleTemp"></div></div>
+            <div style="grid-column:1/-1"><label>During photos <span class="muted small" data-wiz-now="session"></span></label>
+              <div class="wiz-swatches" data-wiz-key="session"></div>
+              <div class="wiz-white" data-wiz-mode="session"><label>Fine-tune warmth <output data-for-path="wiz.sessionTemp"></output> K</label><input type="range" min="2200" max="6500" step="100" data-path="wiz.sessionTemp"></div></div>
+            <div style="grid-column:1/-1"><label>Jump scare <span class="muted small" data-wiz-now="scare"></span></label>
+              <div class="wiz-swatches" data-wiz-key="scare"></div></div>
+            <div><label>Brightness while waiting / photos <output data-for-path="wiz.brightness"></output>%</label><input type="range" min="10" max="100" step="1" data-path="wiz.brightness"></div>
+            <div><label>Jump-scare brightness <output data-for-path="wiz.scareBrightness"></output>%</label><input type="range" min="10" max="100" step="1" data-path="wiz.scareBrightness"></div>
           </div>
         </div>
       </div>

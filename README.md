@@ -192,7 +192,7 @@ ScareBooth also drives **WiZ** colour bulbs directly over the booth router, with
 3. In the console's **WiZ bulb** card, tick **Control the WiZ bulb from ScareBooth** and press **Find bulbs**, then **Use** next to your bulb (or type its IP; several bulbs: separate with commas).
 4. Press **⚡ Test jump-scare lights**. The bulb should turn red, then back to the session colour.
 
-Colours and brightness are in the same card. For *While waiting* and *During photos*, **White** uses the bulb's own white LEDs (2700 K is warm white); mixing white from the colour LEDs looks purple, so use **Colour** only for real colours. The bulb's status shows *Connected* when it answers. WiZ bulbs take about 0.1 s to change, so they're used for room colour only; the camera flash stays on the USB lights box.
+Pick colours with one tap in the same card: **Candle, Warm white, Light warm (default while waiting), Neutral, Cool white** use the bulb's own white LEDs (no purple tint); **Blush pink, Rose** and **Custom** use the colour LEDs. The jump scare has its own colour (Blood red by default) and its own **Jump-scare brightness** slider.
 
 ### Strip design image
 
