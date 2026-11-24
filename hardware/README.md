@@ -22,14 +22,14 @@ Use the code in **`hardware/ScareBoothLightsUno/ScareBoothLightsUno.ino`** (not 
 ```
 Laptop ──USB (USB-B cable)──► Arduino UNO
                                D6  ──► 330 Ω resistor ──► ceiling neon strip DATA (input end)
-                               D9  ──► MOSFET module SIG / PWM  (MOSFET OUT ──► white COB flash strip)
+                               D3  ──► MOSFET module SIG / PWM  (MOSFET OUT ──► white COB flash strip)
                                D10 ──► relay module IN (optional: a plain on/off light, e.g. a single-colour red neon)
                                GND ──► Wago ground ◄── 12 V supply (−), MOSFET GND, neon strip GND
 12 V supply (+) ──► MOSFET VIN+   and   ──► neon strip 12V
 1000 µF capacitor across the neon strip's 12V and GND (stripe / − leg to GND)
 ```
 
-**Pins at a glance:** **D9 = flash** (MOSFET → COB), **D10 = relay** (on/off light), **D6 = addressable strip data**. Other pins (D7 and so on) do nothing.
+**Pins at a glance:** **D3 = flash** (MOSFET → COB; it was D9 before, change `PIN_FLASH` in the code to move it), **D10 = relay** (on/off light), **D6 = addressable strip data**. Other pins (D7 and so on) do nothing.
 
 For a relay on D10, choose in the console's **Lights** card what it does: **Room light** (on normally, off at the scare) or **Scare light** (on only at the jump scare, e.g. a red neon). If the light is on when it should be off, tick **Relay switches on with LOW**. Many relay boards work that way.
 

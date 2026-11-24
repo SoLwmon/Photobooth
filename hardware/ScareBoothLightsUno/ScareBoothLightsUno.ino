@@ -5,7 +5,7 @@
 
   Wiring (Arduino UNO / Nano):
     D6  ──► 330 Ω resistor ──► ceiling neon strip DATA (WS2811/WS2812 "ARGB", input end)
-    D9  ──► MOSFET module SIG/PWM ──► white COB flash strip
+    D3  ──► MOSFET module SIG/PWM ──► white COB flash strip  (was D9; change PIN_FLASH below to move it)
     D10 ──► (optional) second MOSFET module for a 12 V room light — leave unconnected if not used
     GND ──► Wago ground: 12 V supply (−), MOSFET GND, neon strip GND
     USB ──► laptop (powers the Uno and carries ScareBooth's commands)
@@ -34,8 +34,8 @@
 
 // ---------------- pins (change here if you wire differently)
 const uint8_t PIN_STRIP = 6;
-const uint8_t PIN_FLASH = 9;    // Timer1 pin: we run it at ~31 kHz so a dimmed flash never flickers on camera
-const uint8_t PIN_ROOM  = 10;   // Timer1 pin too
+const uint8_t PIN_FLASH = 3;    // flash MOSFET signal. Was 9; moved to 3 (Timer2). Both run at ~31 kHz so a dimmed flash never flickers on camera
+const uint8_t PIN_ROOM  = 10;   // Timer1 pin: ~31 kHz
 const uint16_t MAX_LEDS = 300;  // the UNO has 2 KB of memory: 300 sections is plenty for a booth ceiling
 const uint16_t EEPROM_ADDR = 0; // 2 bytes: LED count, then 1 byte: 0xA5 marker
 
@@ -147,6 +147,8 @@ void setup() {
   pinMode(PIN_ROOM, OUTPUT);  digitalWrite(PIN_ROOM, LOW);
   // Timer1 (pins 9 and 10): prescaler 1 → ~31 kHz PWM, far above what a camera or eye can see.
   TCCR1B = (TCCR1B & 0b11111000) | 0x01;
+  // Timer2 (pins 3 and 11): same ~31 kHz for the flash on pin 3.
+  TCCR2B = (TCCR2B & 0b11111000) | 0x01;
 
   Serial.begin(115200);
   loadLedCount();
