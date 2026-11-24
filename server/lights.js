@@ -228,13 +228,20 @@ class Lights extends EventEmitter {
     const bri = L.stripBrightness;
     const rgb = (h) => hex(h).join(' ');
     this.look.cue = name;
+    // Pin 10 output: a room light (on normally, off at the scare) or a relay that switches a light
+    // on only for the jump scare (e.g. a red neon). Relay boards that switch on with a LOW signal are inverted.
+    const scareOnly = L.relayMode === 'scare';
+    const room = (on) => {
+      const v = on ? (scareOnly ? 255 : L.roomLevel) : 0;
+      this.send(`ROOM ${L.relayInvert ? 255 - v : v}`);
+    };
     switch (name) {
       case 'idle':
-        this.send(`ROOM ${L.roomLevel}`); this.send('FLASH 0');
+        room(!scareOnly); this.send('FLASH 0');
         this.send(`BREATHE ${rgb(L.idleColor)} 4000 ${bri}`);
         break;
       case 'session':
-        this.send(`ROOM ${L.roomLevel}`); this.send('FLASH 0');
+        room(!scareOnly); this.send('FLASH 0');
         this.send(`STRIP ${rgb(L.sessionColor)} ${bri}`);
         break;
       case 'flash':
@@ -242,12 +249,13 @@ class Lights extends EventEmitter {
         break;
       case 'scare':
         // jump scare: room light off, LED strip red, flash device on for the reaction burst
-        this.send('ROOM 0');
+        room(scareOnly);
         this.send(`STRIP ${rgb(L.scareColor)} 255`);
         this.send(`PULSE ${Math.max(200, Math.min(10000, opts.ms || 3000))} ${L.flashLevel}`);
         break;
       case 'off':
         this.send('OFF');
+        if (L.relayInvert) room(false);
         break;
       default:
         return false;

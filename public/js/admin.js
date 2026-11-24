@@ -393,9 +393,13 @@
     st.className = 'tunnel-status ' + (!L.enabled ? 'off' : L.connected ? 'online' : 'offline');
     st.innerHTML = `<b><span class="dot"></span>${!L.enabled ? 'Lights control is off' : L.connected ? 'Connected — ' + esc(L.device || '') + ' on ' + esc(L.port || '') : 'Not connected'}</b>` + (L.message ? `<div class="muted small">${esc(L.message)}</div>` : '');
     const k = L.look || {};
-    const room = (k.room || 0) / 255;
-    $('#lpRoom i').style.background = `rgba(255, 236, 200, ${0.08 + 0.92 * room})`;
-    $('#lpRoom i').style.boxShadow = room ? `0 0 ${Math.round(24 * room)}px rgba(255,236,200,${room})` : 'none';
+    let room = (k.room || 0) / 255;
+    const ls = (settings && settings.lights) || {};
+    if (ls.relayInvert) room = 1 - room;
+    const rc = ls.relayMode === 'scare' ? '255, 40, 50' : '255, 236, 200';
+    $('#lpRoom span').textContent = ls.relayMode === 'scare' ? 'Scare relay (pin 10)' : 'Room light';
+    $('#lpRoom i').style.background = `rgba(${rc}, ${0.08 + 0.92 * room})`;
+    $('#lpRoom i').style.boxShadow = room ? `0 0 ${Math.round(24 * room)}px rgba(${rc},${room})` : 'none';
     const [r, g, b] = k.strip || [0, 0, 0];
     $('#lpStrip i').style.background = `rgb(${r},${g},${b})`;
     $('#lpStrip i').style.boxShadow = (r + g + b) ? `0 0 18px rgb(${r},${g},${b})` : 'none';

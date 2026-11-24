@@ -119,7 +119,7 @@ const DEFAULT_SETTINGS = {
   flow: { chooseOnIpad: false, showWarning: false },
   record: { enabled: true, audio: true, micId: '', micLabel: '', videoKbps: 4000, size: '720p', keepCandidates: true },
   lights: {
-    enabled: false, port: 'auto', ledCount: 60, stripBrightness: 180, roomLevel: 255, flashLevel: 255,
+    enabled: false, port: 'auto', ledCount: 60, stripBrightness: 180, roomLevel: 255, flashLevel: 255, relayMode: 'room', relayInvert: false,
     idleColor: '#ff4f8b', sessionColor: '#ffb3c9', scareColor: '#ff0000',
     flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300,
   },
@@ -226,6 +226,7 @@ function sanitizeSettings(s) {
         enabled: bool(L.enabled, false), port: /^(auto|simulator|COM\d{1,3})$/i.test(L.port || '') ? L.port : 'auto',
         ledCount: Math.round(clamp(L.ledCount, 1, 600, 60)), stripBrightness: Math.round(clamp(L.stripBrightness, 0, 255, 180)),
         roomLevel: Math.round(clamp(L.roomLevel, 0, 255, 255)), flashLevel: Math.round(clamp(L.flashLevel, 0, 255, 255)),
+        relayMode: L.relayMode === 'scare' ? 'scare' : 'room', relayInvert: bool(L.relayInvert, false),
         idleColor: col(L.idleColor, '#ff4f8b'), sessionColor: col(L.sessionColor, '#ffb3c9'), scareColor: col(L.scareColor, '#ff0000'),
         flashOnPhotos: bool(L.flashOnPhotos, false), scareFlashExtraMs: Math.round(clamp(L.scareFlashExtraMs, 0, 5000, 400)),
         revertDelayMs: Math.round(clamp(L.revertDelayMs, 0, 10000, 300)),
