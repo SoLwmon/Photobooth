@@ -249,8 +249,14 @@
         </div>
         <div>
           <div class="split two">
-            <div><label>Idle colour</label><input type="color" data-path="wiz.idleColor"></div>
-            <div><label>Session colour</label><input type="color" data-path="wiz.sessionColor"></div>
+            <div><label>While waiting</label>
+              <select data-path="wiz.idleMode"><option value="white">White (the bulb’s white LEDs)</option><option value="color">Colour</option></select>
+              <div class="wiz-white" data-wiz-mode="idle"><label>Warm ↔ cool <output data-for-path="wiz.idleTemp"></output> K</label><input type="range" min="2200" max="6500" step="100" data-path="wiz.idleTemp"></div>
+              <div class="wiz-color" data-wiz-mode="idle"><input type="color" data-path="wiz.idleColor"></div></div>
+            <div><label>During photos</label>
+              <select data-path="wiz.sessionMode"><option value="white">White (the bulb’s white LEDs)</option><option value="color">Colour</option></select>
+              <div class="wiz-white" data-wiz-mode="session"><label>Warm ↔ cool <output data-for-path="wiz.sessionTemp"></output> K</label><input type="range" min="2200" max="6500" step="100" data-path="wiz.sessionTemp"></div>
+              <div class="wiz-color" data-wiz-mode="session"><input type="color" data-path="wiz.sessionColor"></div></div>
             <div><label>Jump-scare colour</label><input type="color" data-path="wiz.scareColor"></div>
             <div><label>Brightness <output data-for-path="wiz.brightness"></output>%</label><input type="range" min="10" max="100" step="1" data-path="wiz.brightness"></div>
           </div>

@@ -61,6 +61,11 @@
     $('#stripsPerPrintRow').hidden = settings.print.layout !== '4x6-double';
     $('#askRows').hidden = !settings.print.askGuests;
     $('#tplNote').hidden = settings.strip.style !== 'template';
+    for (const k of ['idle', 'session']) {
+      const white = settings.wiz[k + 'Mode'] !== 'color';
+      $(`.wiz-white[data-wiz-mode="${k}"]`).hidden = !white;
+      $(`.wiz-color[data-wiz-mode="${k}"]`).hidden = white;
+    }
     updateDnpNote();
     activeId = p.scare ? p.scare.id : null;
     if (!(keepLocal && sameScare && profile)) profile = p.scare ? p.scare.profile : null;

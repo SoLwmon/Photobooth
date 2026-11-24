@@ -110,6 +110,13 @@ class Wiz extends EventEmitter {
     this.look = { ...this.look, color, dimming: d, on: true };
     this.sendAll('setPilot', { state: true, r, g, b, dimming: d });
   }
+  /** White from the bulb's own white LEDs (2200 K warm … 6500 K cool). Mixing white from RGB looks purple. */
+  setWhite(kelvin, dimming) {
+    const k = Math.max(2200, Math.min(6500, Math.round(kelvin)));
+    const d = Math.max(10, Math.min(100, Math.round(dimming)));
+    this.look = { ...this.look, color: kelvinToHex(k), dimming: d, on: true };
+    this.sendAll('setPilot', { state: true, temp: k, dimming: d });
+  }
   setOff() { this.look = { ...this.look, on: false, dimming: 0 }; this.sendAll('setPilot', { state: false }); }
   sendAll(method, params) {
     const ips = [...this.bulbs.keys()];
@@ -125,8 +132,8 @@ class Wiz extends EventEmitter {
     const W = this.settings.wiz;
     this.look.cue = name;
     switch (name) {
-      case 'idle': this.setColor(W.idleColor, W.brightness); break;
-      case 'session': this.setColor(W.sessionColor, W.brightness); break;
+      case 'idle': W.idleMode === 'color' ? this.setColor(W.idleColor, W.brightness) : this.setWhite(W.idleTemp, W.brightness); break;
+      case 'session': W.sessionMode === 'color' ? this.setColor(W.sessionColor, W.brightness) : this.setWhite(W.sessionTemp, W.brightness); break;
       case 'scare': this.setColor(W.scareColor, 100); break;
       case 'off': this.setOff(); break;
       case 'flash': return true; // bulbs are too slow to be a camera flash — the flash strip does this
@@ -146,6 +153,16 @@ class Wiz extends EventEmitter {
   }
 
   close() { clearInterval(this.pollTimer); if (this.sock) { try { this.sock.close(); } catch (_) {} this.sock = null; } }
+}
+
+/** Rough on-screen colour of a white temperature, for the console preview. */
+function kelvinToHex(k) {
+  const t = k / 100;
+  const r = t <= 66 ? 255 : 329.7 * Math.pow(t - 60, -0.1332);
+  const g = t <= 66 ? 99.47 * Math.log(t) - 161.12 : 288.12 * Math.pow(t - 60, -0.0755);
+  const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.52 * Math.log(t - 10) - 305.04;
+  const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return '#' + c(r) + c(g) + c(b);
 }
 
 function parseIps(s) {

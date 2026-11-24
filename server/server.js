@@ -123,7 +123,8 @@ const DEFAULT_SETTINGS = {
     idleColor: '#ff4f8b', sessionColor: '#ffb3c9', scareColor: '#ff0000',
     flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300,
   },
-  wiz: { enabled: false, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000' },
+  wiz: { enabled: false, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
+    idleMode: 'white', idleTemp: 2700, sessionMode: 'white', sessionTemp: 2700 }, // 'white' = the bulb's own white LEDs (no purple tint)
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
   print: { enabled: false, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '' },
   scares: { active: 'builtin/pale-lady-alpha.webm', profiles: {} },
@@ -177,7 +178,7 @@ function sanitizeSettings(s) {
   const m = deepMerge(DEFAULT_SETTINGS, s || {});
   const t = m.timing;
   const out = {
-    version: 10,
+    version: 11,
     theme: { name: m.theme.name === 'horror' ? 'horror' : 'romance' },
     camera: {
       deviceId: str(m.camera.deviceId, 300), label: str(m.camera.label, 300),
@@ -238,6 +239,8 @@ function sanitizeSettings(s) {
         enabled: bool(W.enabled, false), bulbs: String(W.bulbs || '').replace(/[^\d., ]/g, '').slice(0, 200),
         brightness: Math.round(clamp(W.brightness, 10, 100, 80)),
         idleColor: col(W.idleColor, '#ff4f8b'), sessionColor: col(W.sessionColor, '#ffc9a8'), scareColor: col(W.scareColor, '#ff0000'),
+        idleMode: W.idleMode === 'color' ? 'color' : 'white', sessionMode: W.sessionMode === 'color' ? 'color' : 'white',
+        idleTemp: Math.round(clamp(W.idleTemp, 2200, 6500, 2700) / 100) * 100, sessionTemp: Math.round(clamp(W.sessionTemp, 2200, 6500, 2700) / 100) * 100,
       };
     })(),
     share: {
@@ -315,6 +318,10 @@ try {
   if (!raw.version || raw.version < 10) {
     // the rose-stained "Till Death Do Us Part" strip design
     raw.strip = raw.strip || {}; raw.strip.style = 'template';
+  }
+  if (!raw.version || raw.version < 11) {
+    // WiZ: warm white from the bulb's white LEDs while waiting and during photos (RGB white looked purple)
+    raw.wiz = raw.wiz || {}; raw.wiz.idleMode = 'white'; raw.wiz.sessionMode = 'white';
   }
   settings = sanitizeSettings(raw);
   log('Loaded settings from', SETTINGS_FILE);
