@@ -198,9 +198,11 @@
 
   // ------------------------------------------------------------------ UI per phase
   function layerOn(...ids) { for (const el of $$('.layer')) el.classList.toggle('on', ids.includes(el.id)); }
-  function showQuestion(question, total, prompt) {
+  function showQuestion(question, total, prompt, promptZh) {
     $('#shotNo').textContent = SB.tr('question', undefined, { n: question, total: total || 5 });
+    // English question, with the Chinese underneath
     $('#promptText').textContent = prompt || '';
+    $('#promptZh').textContent = promptZh || ''; $('#promptZh').hidden = !promptZh;
     const lower = $('#lower');
     lower.classList.remove('counting', 'answering', 'pop'); void lower.offsetWidth; lower.classList.add('pop');
   }
@@ -208,8 +210,8 @@
   function onState(s) {
     const prev = state; state = s;
     document.body.className = document.body.className.replace(/\bphase-\S+/g, '').trim() + ' phase-' + s.phase;
-    // guests' language (the start screen shows both)
-    const lang = s.phase === 'idle' ? 'en' : (s.lang || 'en');
+    // English and Chinese together (a session could still ask for just one)
+    const lang = s.phase === 'idle' ? 'both' : (s.lang || 'both');
     if (SB.getLang() !== lang || !onState.langSet) { SB.setLang(lang); onState.langSet = true; }
     // The live camera is only shown once Start is pressed (it keeps running hidden so the start is instant).
     document.body.classList.toggle('cam-off', ['idle', 'intro', 'warning', 'done'].includes(s.phase));
@@ -218,17 +220,16 @@
       case 'idle':
         layerOn('attract');
         $('#attractLine').textContent = SB.themeText('attractLine', 'en') + '\n' + SB.themeText('attractLine', 'zh');
-        $('#attractCta').textContent = SB.tr('pickLang', 'en') + ' · ' + SB.tr('pickLang', 'zh');
+        $('#attractCta').textContent = SB.tr('pressStart', 'both');
         break;
       case 'intro': {
-        const text = settings && settings.instructions ? (settings.instructions[lang] || settings.instructions.en) : '';
-        $('#introSteps').innerHTML = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => `<li>${esc(l)}</li>`).join('');
+        $('#introSteps').innerHTML = SB.stepsHtml(settings && settings.instructions, lang);
         layerOn('intro'); break;
       }
       case 'warning': layerOn('attract'); $('#attractLine').textContent = SB.themeText('warningAttract'); break;
       case 'shooting':
         // Between photos (before the next shoot command arrives) keep the upcoming question on screen.
-        if (!busy) { showQuestion(s.question || s.shot + 1, s.totalQuestions, s.prompt); layerOn('lower'); }
+        if (!busy) { showQuestion(s.question || s.shot + 1, s.totalQuestions, s.prompt, s.promptZh); layerOn('lower'); }
         break;
       case 'choose': renderChoose(s, prev.phase !== 'choose'); layerOn('choose'); break;
       case 'composing': layerOn('developing'); break;
@@ -580,7 +581,7 @@
       const question = cmd.question || cmd.shot + 1;
       if (cmd.shot === 0 || (cmd.shot === 1 && !rec.mr)) { pendingWork = Promise.resolve(); startRecording(cmd.sessionId); }
       // 1) the question pops up at the top, 2) answer time, 3) countdown (the question goes away), 4) flash + photo burst
-      showQuestion(question, cmd.totalQuestions, cmd.prompt || state.prompt);
+      showQuestion(question, cmd.totalQuestions, cmd.prompt || state.prompt, cmd.promptZh ?? state.promptZh);
       layerOn('lower');
       await wait(700, token); // let the question land before the timer starts
       const answerSec = cmd.answerSec ?? (t.answerSecs ? t.answerSecs[question - 1] : t.answerSec) ?? 0;

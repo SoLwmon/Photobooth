@@ -1,6 +1,6 @@
 # ScareBooth
 
-A local horror photobooth. Guests choose English or 中文, read how it works, then answer five questions on the big screen; four of them end in a photo. The first three are normal. During the fourth, a jump-scare appears inside the live camera picture while the booth quietly takes a burst of reaction shots. The iPad is only used to start a session. Everything else happens on the main display, and ScareBooth automatically picks the biggest reaction for the 4-photo strip.
+A local horror photobooth, in English and 中文 together. Guests read how it works, then answer five questions on the big screen; four of them end in a photo. The first three are normal. During the fourth, a jump-scare appears inside the live camera picture while the booth quietly takes a burst of reaction shots. The iPad is only used to start a session. Everything else happens on the main display, and ScareBooth automatically picks the biggest reaction for the 4-photo strip.
 
 Everything runs on one Windows PC. You don't need an account, a cloud service or internet access during the event.
 
@@ -66,8 +66,8 @@ Other options are documented in the comments at the top of that file: the port n
 
 ## 3. Guest experience
 
-1. **iPad → choose a language: English or 中文.** Everything the guests see from here on (instructions, questions, countdown labels, print and download messages, the phone download page) is in that language. The start screen shows both.
-2. **Instructions** appear on the iPad and the main display (*How it works*, editable in the console; the scare is never mentioned). Guests press **Start** on the iPad (or **Back**). After 90 s with nobody pressing Start, the booth returns to the language screen. The session video starts recording when they press Start.
+1. **iPad → Start.** Everything guests see is shown in **English with the Chinese underneath**: the instructions, every question, the countdown labels, print and download messages, and the phone download page.
+2. **Instructions** appear on the iPad and the main display (*How it works*, editable in the console; the scare is never mentioned). Guests press the second **Start** on the iPad (or **Back**). After 90 s with nobody pressing Start, the booth returns to the language screen. The session video starts recording when they press Start.
 3. **Five questions on the main display, at the top of the screen:**
    - **Question 1 is a warm-up:** the couple answers it, and **no photo is taken**.
    - **Questions 2–5 each end in a photo** (4 photos in total).
@@ -79,7 +79,7 @@ Other options are documented in the comments at the top of that file: the port n
 7. **The strip appears on the main display** and is saved on the PC.
 8. **The strip prints automatically:** one 4R sheet, cut into **2 strips** (if printing is on). If you turn on *Ask guests how many prints they want*, the iPad asks instead.
 9. **QR codes appear** on the main display and the iPad, so guests can download the strip and photos on their phone.
-10. After 25 s, or when someone taps **Start a new session** on the iPad, the booth goes back to the language screen.
+10. After 25 s, or when someone taps **Start a new session** on the iPad, the booth goes back to the start screen.
 
 *Optional (console → Timing & photos):* show a warning screen before starting, or let guests pick the final photo on the iPad.
 
@@ -108,7 +108,7 @@ Each session is recorded from Start until the last photo: the camera picture plu
 | **Sound** | Set the master volume. Choose the sting sound (built-in, none, or an uploaded MP3/WAV/OGG/M4A). Choose whether to play the scare video's own audio. **Test sound** plays it on the booth. |
 | **QR download** | Turn the QR code on or off, choose the PC address it uses, and enter the booth Wi-Fi details for the *Join Wi-Fi* code. |
 | **Printing** | Ask guests how many prints, set the maximum (4), choose what prints if they don't answer (1 copy), choose the paper layout, run a test print, and see the sheets-printed counter. Reprints are done from the gallery. |
-| **Questions** | The **five questions in English and 中文**. Question 1 is a warm-up with no photo; questions 2–5 each end in a photo. Each has its own **time to answer**, and questions 2–5 their own **countdown**. The scare strikes during question 5's countdown. |
+| **Questions** | The **five questions in English and 中文** (both are shown, the Chinese under the English). Question 1 is a warm-up with no photo; questions 2–5 each end in a photo. Each has its own **time to answer**, and questions 2–5 their own **countdown**. The scare strikes during question 5's countdown. |
 | **Instructions** | The *How it works* steps shown after the language is chosen, in English and 中文, one step per line. |
 | **Timing & photos** | Screen flash on/off and its length, how many photos are taken around each flash (8), when the scare strikes during the final countdown, the number of jump-scare reaction photos (6), and the optional warning screen and iPad picker.  **Black flash before the scare** (default 200 ms, 0 = off): on the last photo the screen cuts to black for a moment and comes back with the scare already there, so it appears out of nowhere. For “3, 2, black, scare”, set *Scare strikes* earliest and latest to about 2.0 s with a 3 s countdown.|
 | **Session video** | Record on/off, sound on/off, which microphone, video quality, and whether to keep every burst photo (not only the best). |

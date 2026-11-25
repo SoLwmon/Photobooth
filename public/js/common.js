@@ -113,6 +113,7 @@
   };
   let currentTheme = null, currentLang = 'en';
   function themeText(key, lang = currentLang) {
+    if (lang === 'both') return themeText(key, 'en') + ' · ' + themeText(key, 'zh');
     const set = lang === 'zh' ? THEME_TEXT_ZH : THEME_TEXT;
     return (set[currentTheme || 'romance'] || set.romance)[key] || themeTextEn(key);
   }
@@ -171,21 +172,33 @@
     },
   };
   function tr(key, lang = currentLang, vars = {}) {
+    if (lang === 'both') return tr(key, 'en', vars) + ' · ' + tr(key, 'zh', vars); // English and Chinese together
     let t = (STRINGS[lang] || STRINGS.en)[key];
     if (t == null) t = STRINGS.en[key] || key;
     return t.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? vars[k] : ''));
   }
   /** Switch the page's guest-facing language: elements with data-i18n (text) / data-i18n-html (HTML), plus themed text. */
   function setLang(lang) {
-    currentLang = lang === 'zh' ? 'zh' : 'en';
+    currentLang = lang === 'zh' ? 'zh' : lang === 'both' ? 'both' : 'en';
     document.documentElement.lang = currentLang === 'zh' ? 'zh-Hans' : 'en';
     document.body.classList.toggle('lang-zh', currentLang === 'zh');
-    for (const el of $$('[data-i18n]')) el.textContent = tr(el.dataset.i18n);
-    for (const el of $$('[data-i18n-html]')) el.innerHTML = tr(el.dataset.i18nHtml);
-    for (const el of $$('[data-t]')) el.textContent = themeText(el.dataset.t);
-    for (const el of $$('[data-th]')) el.innerHTML = themeText(el.dataset.th);
+    document.body.classList.toggle('lang-both', currentLang === 'both');
+    // both: English with the Chinese on a line underneath
+    const two = (en, zh, html) => `<span class="l-en">${html ? en : esc(en)}</span><span class="l-zh">${html ? zh : esc(zh)}</span>`;
+    for (const el of $$('[data-i18n]')) { if (currentLang === 'both') el.innerHTML = two(tr(el.dataset.i18n, 'en'), tr(el.dataset.i18n, 'zh')); else el.textContent = tr(el.dataset.i18n); }
+    for (const el of $$('[data-i18n-html]')) el.innerHTML = currentLang === 'both' ? two(tr(el.dataset.i18nHtml, 'en'), tr(el.dataset.i18nHtml, 'zh'), true) : tr(el.dataset.i18nHtml);
+    for (const el of $$('[data-t]')) { if (currentLang === 'both') el.innerHTML = two(themeText(el.dataset.t, 'en'), themeText(el.dataset.t, 'zh')); else el.textContent = themeText(el.dataset.t); }
+    for (const el of $$('[data-th]')) el.innerHTML = currentLang === 'both' ? two(themeText(el.dataset.th, 'en'), themeText(el.dataset.th, 'zh'), true) : themeText(el.dataset.th);
   }
   function getLang() { return currentLang; }
+  /** Instruction steps as <li>s; with both languages, step i shows the English line and the Chinese line under it. */
+  function stepsHtml(ins, lang = currentLang) {
+    if (!ins) return '';
+    const lines = (t) => String(t || '').split('\n').map(l => l.trim()).filter(Boolean);
+    if (lang !== 'both') return lines(ins[lang] || ins.en).map(l => `<li>${esc(l)}</li>`).join('');
+    const en = lines(ins.en), zh = lines(ins.zh), n = Math.max(en.length, zh.length);
+    return Array.from({ length: n }, (_, i) => `<li>${en[i] ? `<span class="l-en">${esc(en[i])}</span>` : ''}${zh[i] ? `<span class="l-zh">${esc(zh[i])}</span>` : ''}</li>`).join('');
+  }
   /** Apply the theme class, the booth title and themed wording to the page. */
   function applyTheme(settings) {
     const name = (settings && settings.theme && settings.theme.name) || 'romance';
@@ -197,8 +210,7 @@
     }
     document.body.classList.toggle('grain', name === 'horror');
     for (const el of $$('[data-title]')) el.textContent = title;
-    for (const el of $$('[data-t]')) el.textContent = themeText(el.dataset.t);
-    for (const el of $$('[data-th]')) el.innerHTML = themeText(el.dataset.th);
+    setLang(currentLang); // themed + translated text
     if (!document.title.includes('Operator')) document.title = title;
     try { localStorage.setItem('sb-theme', name); } catch (_) {}
   }
@@ -224,5 +236,5 @@
     document.addEventListener('DOMContentLoaded', () => { if (!currentTheme) { document.body.classList.add('theme-' + t); document.body.classList.toggle('grain', t === 'horror'); } });
   } catch (_) {}
 
-  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles, tr, setLang, getLang };
+  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles, tr, setLang, getLang, stepsHtml };
 })();

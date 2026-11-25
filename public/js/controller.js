@@ -69,18 +69,17 @@
   function render(s) {
     const prev = state; state = s;
     const phase = s.phase;
-    // the guests' language from the moment they pick it; the start screen shows both
-    const lang = phase === 'idle' ? 'en' : (s.lang || 'en');
+    // English and Chinese together (a session could still ask for just one)
+    const lang = phase === 'idle' ? 'both' : (s.lang || 'both');
     if (SB.getLang() !== lang || !render.langSet) { SB.setLang(lang); render.langSet = true; }
-    $('#idleWelcome').textContent = SB.themeText('welcome', 'en') + ' · ' + SB.themeText('welcome', 'zh');
+    $('#idleWelcome').textContent = SB.themeText('welcome', 'both');
     $('#cancelBtn').hidden = phase !== 'choose';
     clearInterval(doneTick); doneTick = null;
 
     switch (phase) {
       case 'idle': showScreen('s-idle'); $('#idleNote').dataset.msg = s.message || ''; break;
       case 'intro': {
-        const text = settings && settings.instructions ? (settings.instructions[lang] || settings.instructions.en) : '';
-        $('#introSteps').innerHTML = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => `<li>${esc(l)}</li>`).join('');
+        $('#introSteps').innerHTML = SB.stepsHtml(settings && settings.instructions, lang);
         showScreen('s-intro'); break;
       }
       case 'warning':
@@ -154,7 +153,7 @@
     for (const b of $$('.lang-btn')) b.disabled = !ok || pending;
     if ($('#startBtn')) $('#startBtn').disabled = !ok || pending;
     const note = $('#idleNote');
-    note.textContent = !ok ? tr('gettingReady', 'en') + ' · ' + tr('gettingReady', 'zh') : (note.dataset.msg || '');
+    note.textContent = !ok ? tr('gettingReady', 'both') : (note.dataset.msg || '');
   }
 
   SB.connect('controller', {

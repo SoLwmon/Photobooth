@@ -488,7 +488,7 @@ setInterval(() => { for (const c of clients.values()) { try { c.res.write(': pin
 const state = {
   phase: 'idle',          // idle | intro | warning | shooting | choose | composing | done
   sessionId: null, shot: 0, prompt: '', message: '',
-  lang: 'en',             // the language the guests chose on the iPad: 'en' | 'zh'
+  lang: 'both',           // guest-facing language: 'both' (English + Chinese together, the default) | 'en' | 'zh'
   question: 0,            // 1–5 on screen; question 1 has no photo, questions 2–5 are photos 1–4
   reactions: [], previewIndex: -1, selected: -1, stripUrl: null, photos: [],
   shareToken: null, printStatus: 'off', printCopies: 0, printAuto: false,
@@ -544,7 +544,7 @@ let watchdog = null, inactivityTimer = null, doneTimer = null, nextShotTimer = n
 function publicState() {
   return {
     phase: state.phase, sessionId: state.sessionId, shot: state.shot, totalShots: 4, prompt: state.prompt,
-    lang: state.lang, question: state.question, totalQuestions: 5,
+    lang: state.lang, question: state.question, totalQuestions: 5, promptZh: state.promptZh || '',
     message: state.message, reactions: state.reactions, previewIndex: state.previewIndex, selected: state.selected,
     stripUrl: state.stripUrl, photos: state.photos, displayOnline: displayOnline(), cameraOk: cameraStatus.ok,
     shareUrl: settings.share.enabled && state.stripUrl ? shareUrlFor(state.shareToken) : null,
@@ -627,7 +627,7 @@ function resetToIdle(message = '') {
   nextShotTimer = clearTimer(nextShotTimer);
   if (state.pendingCmd) sendToDisplay({ cmd: 'abort', cmdId: state.pendingCmd.cmdId });
   if (state.sessionId) writeSessionMeta({ endedAt: new Date().toISOString(), completed: !!state.stripUrl });
-  setState({ phase: 'idle', sessionId: null, shot: 0, question: 0, prompt: '', message, reactions: [], previewIndex: -1, selected: -1, stripUrl: null, photos: [], shareToken: null, printStatus: 'off', printCopies: 0, printAuto: false, pendingCmd: null });
+  setState({ phase: 'idle', sessionId: null, shot: 0, question: 0, prompt: '', promptZh: '', message, reactions: [], previewIndex: -1, selected: -1, stripUrl: null, photos: [], shareToken: null, printStatus: 'off', printCopies: 0, printAuto: false, pendingCmd: null });
 }
 
 function issueCommand(cmd, timeoutMs, onTimeout) {
@@ -677,12 +677,13 @@ function startShot(shot) {
   nextShotTimer = clearTimer(nextShotTimer);
   const t = settings.timing;
   const final = shot === 4, noPhoto = shot === 0, question = shot + 1;
-  const list = settings.questions[state.lang] || settings.questions.en;
-  const prompt = list[question - 1];
+  // English, with the Chinese shown underneath (or one language if a session asked for just one)
+  const prompt = (settings.questions[state.lang === 'zh' ? 'zh' : 'en'] || settings.questions.en)[question - 1];
+  const promptZh = state.lang === 'both' ? settings.questions.zh[question - 1] : '';
   const answerSec = t.answerSecs[question - 1], countdownSec = t.countdownSecs[question - 1];
   const timeout = (1 + answerSec + (noPhoto ? 0 : Math.max(countdownSec, final ? t.scareAtMaxSec : 0) + 4 + (t.preFlashMs + t.flashMs + t.postFlashMs) / 1000) + (final ? t.burstDurationSec + 40 : 0) + 20) * 1000;
-  setState({ phase: 'shooting', shot, question, prompt, message: '' });
-  const cmdId = issueCommand({ cmd: 'shoot', shot, question, totalQuestions: 5, noPhoto, final, prompt, lang: state.lang, totalShots: 4, answerSec, countdownSec }, timeout, () => shotFailed('display did not respond in time'));
+  setState({ phase: 'shooting', shot, question, prompt, promptZh, message: '' });
+  const cmdId = issueCommand({ cmd: 'shoot', shot, question, totalQuestions: 5, noPhoto, final, prompt, promptZh, lang: state.lang, totalShots: 4, answerSec, countdownSec }, timeout, () => shotFailed('display did not respond in time'));
   if (!cmdId) failSession('The booth screen isn’t connected. Please ask a staff member for help.');
 }
 
@@ -783,7 +784,7 @@ function handleControl(body) {
       if (state.phase === 'done') resetToIdle('');
       if (state.phase !== 'idle') return { ok: false, error: 'A session is already in progress.' };
       if (!displayOnline()) return { ok: false, error: 'The booth screen isn’t connected yet. Please ask a staff member.' };
-      setState({ phase: 'intro', lang: body.lang === 'zh' ? 'zh' : 'en', message: '' });
+      setState({ phase: 'intro', lang: ['en', 'zh'].includes(body.lang) ? body.lang : 'both', message: '' });
       return { ok: true };
     }
     case 'back':
@@ -809,7 +810,7 @@ function handleControl(body) {
       state.shareToken = newShareToken(); state.printStatus = 'off'; state.printCopies = 0;
       shareTokens.set(state.shareToken, id);
       retryCount = 0;
-      writeSessionMeta({ startedAt: new Date().toISOString(), lang: state.lang, questions: settings.questions[state.lang], warningAccepted: true, shareToken: state.shareToken });
+      writeSessionMeta({ startedAt: new Date().toISOString(), lang: state.lang, questions: state.lang === 'both' ? settings.questions : settings.questions[state.lang], warningAccepted: true, shareToken: state.shareToken });
       log('Session started', id, 'language', state.lang);
       startShot(0);
       return { ok: true };
@@ -1405,16 +1406,18 @@ function sharePage(res, sid, token) {
     const pick = meta.autoSelectedReaction || (Array.isArray(meta.reactions) && meta.selected >= 0 && meta.reactions[meta.selected] ? meta.reactions[meta.selected].file : null);
     const singles = ['photo1.jpg', 'photo2.jpg', 'photo3.jpg', pick].filter(f => f && files.includes(f));
     // in the language the guests chose at the booth
-    const zh = meta.lang === 'zh';
-    const T = zh ? {
+    const zh = meta.lang === 'zh', both = !meta.lang || meta.lang === 'both';
+    const TZ = {
       eyebrow: theme === 'horror' ? '你活下来了' : '从此幸福快乐', alt: '你们的照片条', dl: '下载照片条',
       howto: '<b>iPhone：</b>长按照片条，选择<b>存储到“照片”</b>。<b>安卓：</b>点“下载”，或长按图片保存。',
       making: '照片条还在制作中——请稍后刷新。', singles: '单张照片', wifi: '连接拍照亭的 Wi-Fi 时才能打开此页面。离开前请保存好你们的照片！',
-    } : {
+    };
+    const TE = {
       eyebrow: theme === 'horror' ? 'You survived' : 'Happily ever after', alt: 'Your photo strip', dl: 'Download strip',
       howto: '<b>iPhone:</b> tap and hold the strip, then choose <b>Save to Photos</b>. <b>Android:</b> tap Download, or tap and hold the image.',
       making: 'Your strip is still being made — refresh in a moment.', singles: 'Single photos', wifi: 'This page works while you’re connected to the booth’s Wi-Fi. Save your photos before you leave!',
     };
+    const T = zh ? TZ : !both ? TE : Object.fromEntries(Object.keys(TE).map(k => [k, k === 'howto' || k === 'wifi' || k === 'making' ? `${TE[k]}<br>${TZ[k]}` : `${TE[k]} · ${TZ[k]}`]));
     body = `<div class="eyebrow">${T.eyebrow}</div><div class="logo">${title}</div>` +
       (files.includes('strip.jpg') ? `<img class="strip" src="/d/${token}/strip.jpg" alt="${T.alt}">
       <a class="btn" href="/d/${token}/strip.jpg?download=1" download>${T.dl}</a>

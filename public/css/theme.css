@@ -87,3 +87,10 @@ button { font-family: inherit; }
 @font-face { font-family: 'Quicksand'; font-weight: 500; src: url('/fonts/quicksand-latin-500-normal.woff2') format('woff2'); font-display: swap; }
 @font-face { font-family: 'Quicksand'; font-weight: 600; src: url('/fonts/quicksand-latin-600-normal.woff2') format('woff2'); font-display: swap; }
 @font-face { font-family: 'Quicksand'; font-weight: 700; src: url('/fonts/quicksand-latin-700-normal.woff2') format('woff2'); font-display: swap; }
+
+/* English and Chinese together: the Chinese sits on its own line under the English */
+.l-en, .l-zh { display: block; }
+.l-zh { font-size: 0.82em; margin-top: 0.15em; font-style: normal; letter-spacing: 0.04em; }
+.btn .l-zh { font-size: 0.7em; margin-top: 0.1em; letter-spacing: 0.1em; }
+.eyebrow .l-zh { letter-spacing: 0.2em; }
+.steps li .l-zh { opacity: 0.85; font-size: 0.9em; margin-top: 0.2em; }

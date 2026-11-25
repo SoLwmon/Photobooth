@@ -111,3 +111,8 @@ body.phase-intro #brand { opacity: 0; }
 body.lang-zh .prompt, body.lang-zh .tagline { font-style: normal; letter-spacing: 0.02em; }
 body.lang-zh .type, body.lang-zh .tagline, body.lang-zh .print-line { font-style: normal; }
 #intro .eyebrow { font-size: clamp(16px, 1.4vw, 28px); } body.portrait #intro .eyebrow { font-size: 2.8vw; }
+/* the Chinese question under the English one */
+.prompt-zh { font-size: clamp(24px, 2.8vw, 54px); color: var(--bone); margin: -0.6vh 0 1.4vh; line-height: 1.25; font-style: normal; letter-spacing: 0.04em; text-shadow: 0 4px 24px #000; }
+.theme-romance .prompt-zh { text-shadow: 0 0 2px #fff, 0 2px 16px rgba(255, 255, 255, 0.9); }
+body.portrait .prompt-zh { font-size: 5.4vw; }
+body.lang-both .prompt { margin-bottom: 0.8vh; }

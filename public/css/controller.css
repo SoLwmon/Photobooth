@@ -110,3 +110,10 @@ html, body { background: radial-gradient(ellipse at 50% 0%, #2a0a0e 0%, #0b0506 
 .steps li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: var(--crimson); color: #fff; }
 .intro-card .btn.huge { min-width: 0; }
 body.lang-zh .type, body.lang-zh .steps li { letter-spacing: 0.02em; font-style: normal; }
+/* both languages: keep the instructions card inside the iPad screen */
+body.lang-both .intro-card { padding: 24px 40px 26px; }
+body.lang-both .intro-title { font-size: clamp(30px, 4vw, 46px); margin: 4px 0 10px; }
+body.lang-both .steps li { font-size: 18px; padding: 8px 0 8px 58px; line-height: 1.4; }
+body.lang-both .steps li::before { top: 8px; width: 38px; height: 38px; font-size: 19px; }
+body.lang-both .intro-card .row { margin-top: 1.4vh; }
+body.lang-both .intro-card .btn.huge { padding: 18px 56px; min-height: 0; }
