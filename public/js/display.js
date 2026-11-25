@@ -450,7 +450,13 @@
       // The session video is recorded at 720p by default: a quarter of the work of 1080p, which keeps the PC
       // free for the jump scare. (Console → Session video → size.)
       const small = R.size !== 'full';
-      let tracks;
+      let tracks, audioTracks = [];
+      if (R.audio) {
+        try {
+          rec.mic = await navigator.mediaDevices.getUserMedia({ audio: R.micId ? { deviceId: { exact: R.micId } } : true, video: false });
+          audioTracks = rec.mic.getAudioTracks();
+        } catch (e) { logRemote('Microphone unavailable for the session video: ' + (e.name || e.message)); }
+      }
       if (camRot()) tracks = uprightVideoTracks(small);
       else {
         const t = video.srcObject.getVideoTracks()[0];
@@ -460,12 +466,7 @@
           tracks = [c];
         } else tracks = [t];
       }
-      if (R.audio) {
-        try {
-          rec.mic = await navigator.mediaDevices.getUserMedia({ audio: R.micId ? { deviceId: { exact: R.micId } } : true, video: false });
-          tracks.push(...rec.mic.getAudioTracks());
-        } catch (e) { logRemote('Microphone unavailable for the session video: ' + (e.name || e.message)); }
-      }
+      tracks.push(...audioTracks);
       // H.264 MP4 plays everywhere (Windows Photos, phones); fall back to WebM (open with Chrome or VLC)
       const type = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E,opus', 'video/mp4;codecs=avc1', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
         .find(t => MediaRecorder.isTypeSupported(t));
@@ -483,6 +484,7 @@
         if (rec.mic) { rec.mic.getTracks().forEach(t => t.stop()); rec.mic = null; }
       };
       mr.start(2000);
+      if (rec.rot && rec.rot.go) rec.rot.go(); // the upright picture starts flowing now, together with the sound
     } catch (e) { rec.mr = null; logRemote('Could not start the session video: ' + e.message); }
   }
   /** Watch how smoothly the scare plays for `ms` and tell the console (frame rate, stalls, graphics chip). */
@@ -506,11 +508,29 @@
   function stopRecording() {
     if (rec.mr && rec.mr.state !== 'inactive') { try { rec.mr.requestData(); rec.mr.stop(); } catch (_) {} }
     rec.mr = null;
-    if (rec.rot) { rec.rot.stop(); rec.rot = null; }
+    if (rec.rot) { const r = rec.rot; rec.rot = null; setTimeout(() => r.stop(), 1200); } // let the recorder take the last frames first
     if (rec.clone) { const c = rec.clone; rec.clone = null; setTimeout(() => c.stop(), 3000); }
   }
   /** With a sideways camera the session video is recorded from an upright copy of the picture. */
   function uprightVideoTracks(small) {
+    // Best: turn the frames upright in a background worker, keeping the camera's timestamps
+    // (smooth video, sound in sync, unaffected by how busy this page is). Chrome / Edge / Brave.
+    try {
+      if (window.MediaStreamTrackProcessor && window.MediaStreamTrackGenerator && window.VideoFrame && window.OffscreenCanvas) {
+        const r = camRot(), side = r === 90 || r === 270;
+        const vw = video.videoWidth, vh = video.videoHeight;
+        const k = small ? Math.min(1, 1280 / Math.max(vw, vh)) : 1;
+        const outW = Math.round((side ? vh : vw) * k / 2) * 2, outH = Math.round((side ? vw : vh) * k / 2) * 2;
+        const src = video.srcObject.getVideoTracks()[0].clone();
+        const processor = new MediaStreamTrackProcessor({ track: src });
+        const generator = new MediaStreamTrackGenerator({ kind: 'video' });
+        const worker = new Worker('/js/rotate-worker.js');
+        worker.onmessage = (e) => { if (e.data && e.data.error) logRemote('Session video rotate: ' + e.data.error); };
+        worker.postMessage({ readable: processor.readable, writable: generator.writable, rot: r, outW, outH }, [processor.readable, generator.writable]);
+        rec.rot = { go() { worker.postMessage({ go: true, at: performance.now() }); }, stop() { try { src.stop(); } catch (_) {} try { generator.stop(); } catch (_) {} setTimeout(() => worker.terminate(), 1500); } };
+        return [generator];
+      }
+    } catch (e) { logRemote('Background video rotation unavailable, using the page: ' + e.message); }
     const r = camRot(), side = r === 90 || r === 270, c = document.createElement('canvas');
     const vw = video.videoWidth, vh = video.videoHeight;
     const k = small ? Math.min(1, 1280 / Math.max(vw, vh)) : 1; // 720 × 1280 for a sideways 1080p camera

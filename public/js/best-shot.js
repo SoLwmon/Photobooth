@@ -27,6 +27,19 @@
       faceReady = true;
       // facial expressions (surprised / fearful) for picking the most scared jump-scare photo; optional
       try { await fa.nets.faceExpressionNet.loadFromUri(MODEL_URL); exprReady = true; } catch (e) { console.warn('Expression model unavailable:', e); }
+      // Warm up: the very first face check prepares the graphics chip, which can freeze things for a few
+      // seconds. Do it now, while the booth is idle, instead of at the first photo.
+      try {
+        const c = document.createElement('canvas'); c.width = AW; c.height = Math.round(AW * 0.75);
+        const g = c.getContext('2d'); g.fillStyle = '#888'; g.fillRect(0, 0, c.width, c.height);
+        let q = fa.detectAllFaces(c, new fa.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.45 })).withFaceLandmarks();
+        if (exprReady) q = q.withFaceExpressions();
+        await q;
+        // a blank picture has no face, so run the eye/mouth and expression models directly too
+        const f = document.createElement('canvas'); f.width = f.height = 112; f.getContext('2d').drawImage(c, 0, 0, 112, 112);
+        await fa.nets.faceLandmark68Net.detectLandmarks(f);
+        if (exprReady) await fa.nets.faceExpressionNet.predictExpressions(f);
+      } catch (e) { console.warn('Face analysis warm-up:', e); }
     })().catch(e => { loadError = e; faceReady = false; console.warn('Face analysis unavailable:', e); });
     return loadPromise;
   }
