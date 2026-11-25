@@ -486,6 +486,18 @@ function statusPayload() {
   return { clients: counts, displayOnline: displayOnline(), camera: cameraStatus, urls: lanUrls(), tunnel: tunnelInfo(), lights: lights.info(), wiz: wiz.info(), shareHost: shareHost(), prints: printCounter.total || 0, phase: state.phase, sessionId: state.sessionId, lastScarePerf };
 }
 function broadcastStatus() { broadcast('status', statusPayload(), ['admin']); }
+// A fingerprint of the web pages' code: open pages reload themselves when the program is updated.
+const BUILD_ID = (() => {
+  let h = 0;
+  const walk = (dir) => { for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, f.name);
+    if (f.isDirectory()) { if (!['vendor', 'fonts', 'assets'].includes(f.name)) walk(p); }
+    else if (/\.(js|html|css)$/.test(f.name)) { const st = fs.statSync(p); for (const c of `${f.name}:${st.size}:${Math.round(st.mtimeMs)}`) h = (h * 31 + c.charCodeAt(0)) | 0; }
+  } };
+  try { walk(path.join(ROOT, 'public')); } catch (_) {}
+  return (h >>> 0).toString(36);
+})();
+
 function settingsPayload() {
   return { settings, scare: activeScare(), scares: listScares(), sounds: listSounds() };
 }
@@ -793,6 +805,7 @@ function handleControl(body) {
     case 'begin': {
       // the guests picked a language on the iPad: show the instructions in it, then wait for Start
       if (state.phase === 'done') resetToIdle('');
+      if (state.phase === 'intro') { broadcast('state', publicState()); return { ok: true }; } // pressed twice: already on the instructions
       if (state.phase !== 'idle') return { ok: false, error: 'A session is already in progress.' };
       if (!displayOnline()) return { ok: false, error: 'The booth screen isn’t connected yet. Please ask a staff member.' };
       setState({ phase: 'intro', lang: ['en', 'zh'].includes(body.lang) ? body.lang : 'both', message: '' });
@@ -1115,7 +1128,7 @@ async function route(req, res) {
       primaryDisplay = id;
       log('Display connected', req.socket.remoteAddress);
     } else log(role, 'connected', req.socket.remoteAddress);
-    send(res, 'hello', { id, role });
+    send(res, 'hello', { id, role, build: BUILD_ID });
     send(res, 'settings', settingsPayload());
     send(res, 'state', publicState());
     if (role === 'admin') send(res, 'status', statusPayload());

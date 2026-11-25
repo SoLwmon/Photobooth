@@ -6,6 +6,14 @@
   function connect(role, handlers) {
     let es = null;
     let online = false;
+    // Reload when the program is updated (the server's code fingerprint changes), but only between sessions.
+    let build = null, reloadWanted = false, phase = 'idle';
+    const maybeReload = () => { if (reloadWanted && ['idle', 'done'].includes(phase)) location.reload(); };
+    const inner = handlers;
+    handlers = Object.assign({}, inner, {
+      hello: (d) => { if (d && d.build) { if (build && build !== d.build) reloadWanted = true; build = d.build; maybeReload(); } inner.hello && inner.hello(d); },
+      state: (s) => { if (s && s.phase) phase = s.phase; inner.state && inner.state(s); maybeReload(); },
+    });
     const setOnline = (v) => { if (v !== online) { online = v; handlers.connection && handlers.connection(v); } };
     function open() {
       es = new EventSource('/events?role=' + encodeURIComponent(role));

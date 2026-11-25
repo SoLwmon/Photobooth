@@ -277,6 +277,7 @@ Back up or empty the `data` folder between events. You can browse and download e
 | Phones can't open the QR link | The phone must be on the same Wi-Fi as the PC (use the *Join Wi-Fi* code). Check the QR uses the right PC address in the console, and run `allow-ipad-access.bat`. |
 | Nothing prints | In the console, check **Print method** is *Straight to the printer* and the right **Printer** is selected (not a PDF printer). Check the printer prints a Windows test page, then use **Test print**. The console shows the exact error if Windows refuses the job. |
 | A print dialog or "Save as PDF" appears | You're on the *Through the display browser* method. Switch to **Straight to the printer**. |
+| iPad says “A session is already in progress” | The iPad page was still the old version after an update. Reload it once (pull down in Safari, or close and reopen the Home Screen app). From this version on, the iPad and display reload themselves after an update, between sessions. |
 | Full screen needs several F11 presses | Fixed: on the display, **F11** (or **F**, or a double-click) now switches full screen on and off in one press. `start-scarebooth.bat` opens it full screen already. |
 | Print is cropped or has borders | Set paper size, borderless and scaling in the printer's *Printing preferences*, then **Test print** again. |
 | *Port 8080 is already in use* | ScareBooth is already running in another window. Or set `PORT=8090` at the top of `start-scarebooth.bat`. |
