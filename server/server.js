@@ -121,7 +121,7 @@ const DEFAULT_SETTINGS = {
   lights: {
     enabled: false, port: 'auto', ledCount: 60, stripBrightness: 180, roomLevel: 255, flashLevel: 255, relayMode: 'room', relayInvert: false,
     idleColor: '#ff4f8b', sessionColor: '#ffb3c9', scareColor: '#ff0000',
-    flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300,
+    flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300, scareFlashDelayMs: 1500,
   },
   wiz: { enabled: false, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
     idleMode: 'white', idleTemp: 3500, sessionMode: 'white', sessionTemp: 2700, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
@@ -229,7 +229,7 @@ function sanitizeSettings(s) {
         roomLevel: Math.round(clamp(L.roomLevel, 0, 255, 255)), flashLevel: Math.round(clamp(L.flashLevel, 0, 255, 255)),
         relayMode: L.relayMode === 'scare' ? 'scare' : 'room', relayInvert: bool(L.relayInvert, false),
         idleColor: col(L.idleColor, '#ff4f8b'), sessionColor: col(L.sessionColor, '#ffb3c9'), scareColor: col(L.scareColor, '#ff0000'),
-        flashOnPhotos: bool(L.flashOnPhotos, false), scareFlashExtraMs: Math.round(clamp(L.scareFlashExtraMs, 0, 5000, 400)),
+        flashOnPhotos: bool(L.flashOnPhotos, false), scareFlashExtraMs: Math.round(clamp(L.scareFlashExtraMs, 0, 5000, 400)), scareFlashDelayMs: Math.round(clamp(L.scareFlashDelayMs, 0, 5000, 1500)),
         revertDelayMs: Math.round(clamp(L.revertDelayMs, 0, 10000, 300)),
       };
     })(),

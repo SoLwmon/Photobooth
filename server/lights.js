@@ -225,6 +225,7 @@ class Lights extends EventEmitter {
   /** Named lighting moments used by the booth. */
   cue(name, opts = {}) {
     const L = this.settings.lights;
+    clearTimeout(this.flashDelayTimer); // a new moment cancels a scare flash that hasn't fired yet
     const bri = L.stripBrightness;
     const rgb = (h) => hex(h).join(' ');
     this.look.cue = name;
@@ -251,7 +252,12 @@ class Lights extends EventEmitter {
         // jump scare: room light off, LED strip red, flash device on for the reaction burst
         room(scareOnly);
         this.send(`STRIP ${rgb(L.scareColor)} 255`);
-        this.send(`PULSE ${Math.max(200, Math.min(10000, opts.ms || 3000))} ${L.flashLevel}`);
+        {
+          // the flash can wait (e.g. 1.5 s, for the scream in the scare clip); it still ends when the burst ends
+          const total = Math.max(200, Math.min(10000, opts.ms || 3000)), wait = L.scareFlashDelayMs || 0;
+          const pulse = () => this.send(`PULSE ${Math.max(800, total - wait)} ${L.flashLevel}`);
+          if (wait > 0) this.flashDelayTimer = setTimeout(pulse, wait); else pulse();
+        }
         break;
       case 'off':
         this.send('OFF');
