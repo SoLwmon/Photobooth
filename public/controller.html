@@ -22,13 +22,30 @@
   <div class="florals tl"></div><div class="florals tr"></div><div class="florals bl"></div><div class="florals br"></div>
 
   <main id="app">
-    <!-- idle -->
+    <!-- idle: pick a language (shown in both) -->
     <section id="s-idle" class="screen center">
-      <div class="eyebrow" data-t="welcome"></div>
+      <div class="eyebrow" id="idleWelcome"></div>
       <h1 class="logo hero" data-title>Till Death Do Us Part</h1>
-      <p class="type lead" data-th="lead"></p>
-      <button class="btn huge" data-action="begin" id="beginBtn">Start</button>
+      <p class="type lead lang-ask">Choose your language · 请选择语言</p>
+      <div class="lang-row">
+        <button class="btn huge lang-btn" data-action="begin" data-lang="en">English</button>
+        <button class="btn huge lang-btn" data-action="begin" data-lang="zh">中文</button>
+      </div>
       <p class="type sub" id="idleNote"></p>
+    </section>
+
+    <!-- intro: how it works, then Start -->
+    <section id="s-intro" class="screen center">
+      <div class="intro-card">
+        <div class="eyebrow red" data-i18n="howItWorks"></div>
+        <h2 class="logo intro-title" data-title>Till Death Do Us Part</h2>
+        <ol class="steps" id="introSteps"></ol>
+        <p class="type sub" data-i18n="readyWhenYouAre"></p>
+        <div class="row">
+          <button class="btn ghost" data-action="back" data-i18n="back"></button>
+          <button class="btn huge" data-action="start" id="startBtn" data-i18n="start"></button>
+        </div>
+      </div>
     </section>
 
     <!-- warning -->
@@ -36,11 +53,11 @@
       <div class="warn-card">
         <div class="warn-icon">!</div>
         <div class="eyebrow red" data-t="warnEyebrow"></div>
-        <h2 class="type">Sudden visuals &amp; loud sound</h2>
+        <h2 class="type" data-i18n="warnTitle"></h2>
         <p id="warningText"></p>
         <div class="row">
-          <button class="btn ghost" data-action="decline">No thanks</button>
-          <button class="btn" data-action="accept">I understand — Start</button>
+          <button class="btn ghost" data-action="decline" data-i18n="noThanks"></button>
+          <button class="btn" data-action="accept" data-i18n="iUnderstand"></button>
         </div>
       </div>
     </section>
@@ -48,22 +65,22 @@
     <!-- shooting -->
     <section id="s-shooting" class="screen center">
       <div class="eye"><span></span></div>
-      <h2 class="type look">Look at the big screen</h2>
-      <p class="type sub">Your questions and countdowns are up there.</p>
+      <h2 class="type look" data-i18n="lookBig"></h2>
+      <p class="type sub" data-i18n="lookBigSub"></p>
     </section>
 
     <!-- choose -->
     <section id="s-choose" class="screen choose">
       <header>
-        <div class="eyebrow red">The final photo</div>
-        <h2 class="type">Pick your best reaction</h2>
-        <p class="sub small choose-hint">Tap a photo to see it bigger, then tap <b>Use this one</b>.</p>
+        <div class="eyebrow red" data-i18n="finalPhoto"></div>
+        <h2 class="type" data-i18n="pickReaction"></h2>
+        <p class="sub small choose-hint" data-i18n-html="pickHint"></p>
       </header>
       <div class="preview"><img id="chooseImg" alt="Selected reaction"></div>
       <div class="thumbs" id="thumbs"></div>
       <p class="msg" id="chooseMsg"></p>
       <div class="row">
-        <button class="btn" id="confirmBtn">Use this one</button>
+        <button class="btn" id="confirmBtn" data-i18n="useThis"></button>
       </div>
       <p class="sub small" id="chooseTimer"></p>
     </section>
@@ -71,24 +88,24 @@
     <!-- composing -->
     <section id="s-composing" class="screen center">
       <div class="eye"><span></span></div>
-      <h2 class="type look">Developing your strip…</h2>
+      <h2 class="type look" data-i18n="developingIpad"></h2>
     </section>
 
     <!-- done -->
     <section id="s-done" class="screen center">
       <div class="eyebrow red" data-t="ipadDoneEyebrow"></div>
-      <h2 class="logo donehead" id="doneHead">Your strip is ready</h2>
+      <h2 class="logo donehead" id="doneHead" data-i18n="stripReady"></h2>
       <div id="printAsk" class="print-ask" hidden>
-        <h3 class="type">How many prints would you like?</h3>
-        <p class="type print-each" id="printEach" hidden>Each print is 2 photo strips</p>
+        <h3 class="type" data-i18n="howManyPrints"></h3>
+        <p class="type print-each" id="printEach" hidden data-i18n="eachPrint2"></p>
         <div class="copies" id="copyBtns"></div>
       </div>
       <p class="type print-status" id="printStatus"></p>
       <div class="qrs" id="qrs">
-        <div class="qr" id="qrWifiBox" hidden><div class="qr-img" id="qrWifi"></div><div class="qr-cap"><b>1</b> Join Wi-Fi <span id="qrWifiName"></span></div></div>
-        <div class="qr" id="qrDlBox" hidden><div class="qr-img" id="qrDl"></div><div class="qr-cap"><b id="qrStep">2</b> Scan to download<span id="qrNote"></span></div></div>
+        <div class="qr" id="qrWifiBox" hidden><div class="qr-img" id="qrWifi"></div><div class="qr-cap"><b>1</b> <span data-i18n="joinWifi"></span> <span id="qrWifiName"></span></div></div>
+        <div class="qr" id="qrDlBox" hidden><div class="qr-img" id="qrDl"></div><div class="qr-cap"><b id="qrStep">2</b> <span data-i18n="scanDownload"></span><span id="qrNote"></span></div></div>
       </div>
-      <button class="btn" data-action="begin" id="againBtn">Start a new session</button>
+      <button class="btn" data-action="finish" id="againBtn" data-i18n="newSession"></button>
       <p class="sub small" id="doneTimer"></p>
     </section>
   </main>

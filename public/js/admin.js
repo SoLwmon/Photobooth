@@ -128,10 +128,13 @@
   function saveProfile(path, v) { if (activeId) savePatch({ scares: { profiles: { [activeId]: nest(path, v) } } }); }
   function savePath(el) {
     const p = el.dataset.path;
-    if (p.startsWith('prompts.')) return savePatch({ prompts: $$('[data-path^="prompts."]').map(t => t.value) });
-    // per-question timing: save the whole list of four
+    // questions: save the whole list of five for that language
+    for (const lang of ['en', 'zh']) {
+      if (p.startsWith(`questions.${lang}.`)) return savePatch({ questions: { [lang]: [0, 1, 2, 3, 4].map(i => $(`[data-path="questions.${lang}.${i}"]`).value) } });
+    }
+    // per-question timing: save the whole list of five (question 1 has no countdown; its value is kept)
     for (const key of ['answerSecs', 'countdownSecs']) {
-      if (p.startsWith(`timing.${key}.`)) return savePatch({ timing: { [key]: [0, 1, 2, 3].map(i => Number($(`[data-path="timing.${key}.${i}"]`).value)) } });
+      if (p.startsWith(`timing.${key}.`)) return savePatch({ timing: { [key]: [0, 1, 2, 3, 4].map(i => { const el = $(`[data-path="timing.${key}.${i}"]`); return el ? Number(el.value) : settings.timing[key][i]; }) } });
     }
     const v = readInput(el); if (v === undefined) return;
     savePatch(nest(p, v));

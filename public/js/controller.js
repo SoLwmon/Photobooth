@@ -1,7 +1,7 @@
 // ScareBooth iPad controller
 (function () {
   'use strict';
-  const { $, $$, api, esc, showScreen } = SB;
+  const { $, $$, api, esc, showScreen, tr } = SB;
 
   let state = null, settings = null, connected = false;
   let localPreview = -1, pending = false, doneTick = null;
@@ -32,7 +32,7 @@
     e.preventDefault();
     const a = b.dataset.action;
     if (a === 'cancel' && !confirm('End this session? Photos taken so far stay saved on the PC.')) return;
-    act(a, {}, b);
+    act(a, b.dataset.lang ? { lang: b.dataset.lang } : {}, b);
   });
 
   // ---- choose screen
@@ -69,11 +69,20 @@
   function render(s) {
     const prev = state; state = s;
     const phase = s.phase;
+    // the guests' language from the moment they pick it; the start screen shows both
+    const lang = phase === 'idle' ? 'en' : (s.lang || 'en');
+    if (SB.getLang() !== lang || !render.langSet) { SB.setLang(lang); render.langSet = true; }
+    $('#idleWelcome').textContent = SB.themeText('welcome', 'en') + ' · ' + SB.themeText('welcome', 'zh');
     $('#cancelBtn').hidden = phase !== 'choose';
     clearInterval(doneTick); doneTick = null;
 
     switch (phase) {
       case 'idle': showScreen('s-idle'); $('#idleNote').dataset.msg = s.message || ''; break;
+      case 'intro': {
+        const text = settings && settings.instructions ? (settings.instructions[lang] || settings.instructions.en) : '';
+        $('#introSteps').innerHTML = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => `<li>${esc(l)}</li>`).join('');
+        showScreen('s-intro'); break;
+      }
       case 'warning':
         $('#warningText').textContent = settings ? settings.warning.text : '';
         showScreen('s-warning'); break;
@@ -86,7 +95,7 @@
         $('#chooseMsg').textContent = s.message || '';
         {
           const end = s.updatedAt + (s.chooseTimeoutSec || 45) * 1000;
-          const tick = () => { const left = Math.max(0, Math.round((end - Date.now()) / 1000)); $('#chooseTimer').textContent = `No pick in ${left}s? We’ll choose the biggest reaction for you.`; };
+          const tick = () => { const left = Math.max(0, Math.round((end - Date.now()) / 1000)); $('#chooseTimer').textContent = tr('noPickIn', undefined, { n: left }); };
           tick(); doneTick = setInterval(tick, 1000);
         }
         showScreen('s-choose'); break;
@@ -106,28 +115,29 @@
     $('#printEach').hidden = !(asking && s.stripsPerPrint === 2);
     if (asking && $('#copyBtns').dataset.max !== String(s.printMax)) {
       $('#copyBtns').dataset.max = s.printMax;
-      $('#copyBtns').innerHTML = `<button class="btn ghost none" data-copies="0">No prints</button>` +
+      $('#copyBtns').innerHTML = `<button class="btn ghost none" data-copies="0">${esc(tr('noPrints'))}</button>` +
         Array.from({ length: s.printMax }, (_, i) => `<button class="btn" data-copies="${i + 1}">${i + 1}</button>`).join('');
     }
+    const strips = s.printCopies * (s.stripsPerPrint || 1);
     $('#printStatus').textContent = {
-      ask: s.printDefault > 0 ? `If you don’t choose, we’ll print ${s.printDefault} for you.` : '',
-      printing: s.printFixed ? `Printing your ${s.printCopies * (s.stripsPerPrint || 1)} photo ${s.printCopies * (s.stripsPerPrint || 1) === 1 ? 'strip' : 'strips'}…` : `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}${s.stripsPerPrint === 2 ? ` (${s.printCopies * 2} strips)` : ''}${s.printAuto ? ' (automatic)' : ''}…`,
-      printed: 'Printed! Collect your strips from the printer.',
-      error: 'There was a printing problem — please ask a staff member.',
+      ask: s.printDefault > 0 ? tr('ifNoChoice', undefined, { n: s.printDefault }) : '',
+      printing: s.printFixed ? (strips === 1 ? tr('printingStrip1') : tr('printingStrips', undefined, { n: strips })) : (s.printCopies === 1 ? tr('printingCopy1') : tr('printingCopies', undefined, { n: s.printCopies })),
+      printed: tr('printed'),
+      error: tr('printError'),
     }[s.printStatus] || '';
     // QR codes appear once the print question is answered (or straight away when printing is off)
     const showQr = !asking && !!s.shareUrl;
     const share = settings && settings.share;
     const wifi = showQr && !s.shareOnline && share && share.wifiSsid ? SB.wifiQrText(share) : '';
-    $('#qrNote').textContent = s.shareOnline ? 'Works on mobile data' : '';
+    $('#qrNote').textContent = s.shareOnline ? ' · ' + tr('mobileData') : '';
     $('#qrDl').innerHTML = showQr ? SB.qrSvg(s.shareUrl) : ''; $('#qrDlBox').hidden = !showQr;
     $('#qrWifi').innerHTML = wifi ? SB.qrSvg(wifi) : ''; $('#qrWifiBox').hidden = !wifi;
     $('#qrWifiName').textContent = share ? share.wifiSsid : '';
     $('#qrStep').textContent = wifi ? '2' : '';
     $('#againBtn').hidden = asking;
     const end = s.updatedAt + ((settings && settings.timing.doneTimeoutSec) || 25) * 1000;
-    const label = asking && s.printDefault > 0 ? `Printing ${s.printDefault} automatically in` : s.printStatus === 'printing' ? '' : 'The booth resets in';
-    const tick = () => { const left = Math.max(0, Math.round((end - Date.now()) / 1000)); $('#doneTimer').textContent = label ? `${label} ${left}s` : ''; };
+    const label = asking && s.printDefault > 0 ? 'autoPrintIn' : s.printStatus === 'printing' ? '' : 'resetsIn';
+    const tick = () => { const left = Math.max(0, Math.round((end - Date.now()) / 1000)); $('#doneTimer').textContent = label ? tr(label, undefined, { n: left, d: s.printDefault }) : ''; };
     tick(); doneTick = setInterval(tick, 1000);
   }
   $('#copyBtns').addEventListener('click', (e) => {
@@ -138,13 +148,13 @@
   function updateStatus() {
     const pill = $('#status'), txt = $('#statusText');
     let ok = connected && state && state.displayOnline && state.cameraOk;
-    let msg = !connected ? 'Reconnecting to booth…' : !state || !state.displayOnline ? 'Booth screen offline' : !state.cameraOk ? 'Camera not ready' : 'Ready';
+    let msg = tr(!connected ? 'reconnecting' : !state || !state.displayOnline ? 'displayOffline' : !state.cameraOk ? 'cameraNotReady' : 'ready');
     pill.className = 'pill ' + (ok ? 'ok' : 'bad');
     txt.textContent = msg;
-    const begin = $('#beginBtn');
-    begin.disabled = !ok || pending;
+    for (const b of $$('.lang-btn')) b.disabled = !ok || pending;
+    if ($('#startBtn')) $('#startBtn').disabled = !ok || pending;
     const note = $('#idleNote');
-    note.textContent = !ok ? 'The booth is getting ready… please ask a staff member if this doesn’t clear.' : (note.dataset.msg || '');
+    note.textContent = !ok ? tr('gettingReady', 'en') + ' · ' + tr('gettingReady', 'zh') : (note.dataset.msg || '');
   }
 
   SB.connect('controller', {

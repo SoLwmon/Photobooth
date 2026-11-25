@@ -134,3 +134,8 @@ html.theme-romance, .theme-romance.ipad { background: radial-gradient(ellipse at
 
 /* the "Till Death Do Us Part" title is black (display, iPad, download page) */
 .theme-romance [data-title], .theme-romance.share .logo { color: #111; text-shadow: 0 2px 0 rgba(255,255,255,0.8), 0 6px 22px rgba(0,0,0,0.18); }
+.theme-romance .intro-card { background: rgba(255, 246, 249, 0.92); border-color: rgba(200, 40, 80, 0.3); box-shadow: 0 30px 80px rgba(120, 20, 50, 0.25); }
+.theme-romance .steps li { color: #3a1420; border-top-color: rgba(120, 20, 50, 0.12); }
+.theme-romance .steps li::before { background: #c8284f; }
+/* Chinese text: no italics (CJK fonts have none); the browser falls back to the system Chinese font */
+.theme-romance.lang-zh .prompt, body.lang-zh .prompt { font-style: normal; }

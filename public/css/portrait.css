@@ -86,3 +86,28 @@ body.portrait:not(.cam-window) #countdown { padding-bottom: 30vh; }
 body.portrait:not(.cam-window) #countdown .ring { width: 56vw; }
 body.portrait:not(.cam-window) #countdown .num { font-size: 32vw; }
 body.portrait:not(.cam-window) #brand { text-shadow: 0 2px 0 rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.9); }
+
+/* ---- revision: the question sits at the TOP of the screen and goes away during the countdown ---- */
+#lower { align-items: flex-start; padding: 4vh 6vw 0; background: linear-gradient(to bottom, rgba(5,2,3,0.92) 0%, rgba(5,2,3,0.55) 22%, transparent 42%); }
+.theme-romance #lower { background: linear-gradient(to bottom, rgba(255, 238, 244, 0.95) 0%, rgba(255, 238, 244, 0.7) 22%, transparent 42%); }
+body.portrait:not(.cam-window) #lower { padding: 4vh 6vw 0; }
+#lower .lower-card { transition: opacity 0.25s ease; }
+#lower.counting { background: none; }
+#lower.counting .lower-card { opacity: 0; visibility: hidden; animation: none; }
+body.phase-shooting #brand { opacity: 0; }               /* the title would sit on top of the question */
+#countdown, body:not(.portrait) #countdown, body.portrait:not(.cam-window) #countdown { padding-bottom: 0; }
+
+/* ---- instructions on the main display (after the language is chosen) ---- */
+#intro { align-items: center; justify-content: center; padding: 0 6vw; }
+#intro .intro-card { text-align: center; max-width: 1100px; }
+#intro .intro-title { font-size: clamp(40px, 5vw, 96px); margin: 1vh 0 3vh; }
+#intro .steps { text-align: left; margin: 0 auto 4vh; padding: 0; list-style: none; counter-reset: step; max-width: 1000px; }
+#intro .steps li { counter-increment: step; position: relative; padding: 1.4vh 0 1.4vh 2.3em; font-size: clamp(20px, 2vw, 40px); line-height: 1.45; color: var(--bone); }
+#intro .steps li::before { content: counter(step); position: absolute; left: 0; top: calc(1.4vh + 0.1em); width: 2em; height: 2em; font-size: 0.75em; border-radius: 50%; display: grid; place-items: center; background: var(--crimson); color: #fff; }
+body.portrait #intro .intro-title { font-size: 8vw; }
+body.portrait #intro .steps li { font-size: 4.2vw; }
+body.phase-intro #brand { opacity: 0; }
+#attractLine { white-space: pre-line; }
+body.lang-zh .prompt, body.lang-zh .tagline { font-style: normal; letter-spacing: 0.02em; }
+body.lang-zh .type, body.lang-zh .tagline, body.lang-zh .print-line { font-style: normal; }
+#intro .eyebrow { font-size: clamp(16px, 1.4vw, 28px); } body.portrait #intro .eyebrow { font-size: 2.8vw; }

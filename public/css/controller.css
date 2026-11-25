@@ -97,3 +97,16 @@ html, body { background: radial-gradient(ellipse at 50% 0%, #2a0a0e 0%, #0b0506 
 #chooseTimer { margin-top: 1vh; }
 .theme-romance.ipad .thumbs.few button { border-radius: 14px; background: #fff; }
 .print-each { margin: -1vh 0 2vh; font-size: 20px; opacity: .8; }
+
+/* language choice + instructions */
+.lang-ask { margin-top: 2vh; }
+.lang-row { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-top: 2vh; width: 100%; }
+.lang-row .btn.huge { min-width: 0; flex: 0 1 320px; }
+.intro-card { max-width: 900px; width: 88vw; background: rgba(12,6,7,0.85); border: 1px solid rgba(224,36,47,0.35); padding: 40px 48px; box-shadow: 0 40px 100px #000; text-align: center; }
+.intro-title { font-size: clamp(36px, 5vw, 60px); margin: 8px 0 18px; }
+.steps { text-align: left; margin: 0 auto 2vh; padding: 0; list-style: none; counter-reset: step; max-width: 760px; }
+.steps li { counter-increment: step; position: relative; padding: 12px 0 12px 64px; font-size: 22px; line-height: 1.5; color: var(--bone); border-top: 1px solid rgba(255,255,255,0.08); }
+.steps li:first-child { border-top: 0; }
+.steps li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: var(--crimson); color: #fff; }
+.intro-card .btn.huge { min-width: 0; }
+body.lang-zh .type, body.lang-zh .steps li { letter-spacing: 0.02em; font-style: normal; }

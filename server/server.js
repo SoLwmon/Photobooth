@@ -77,6 +77,27 @@ const THEME_PRESETS = {
     ],
     title: 'Till Death Do Us Part',
     footer: 'Love you to death ♥',
+    // five questions: the first is a warm-up with no photo, the next four each end in a photo (the last one: the scare)
+    questions: {
+      en: [
+        'First, tell us your names — and how did you two meet?',
+        'Who said “I love you” first? Tell us the story!',
+        'What was your very first date?',
+        'What’s one little thing your partner does that you adore?',
+        'Do you promise to love each other… till death do you part?',
+      ],
+      zh: [
+        '先来介绍一下你们的名字——你们是怎么认识的？',
+        '谁先说“我爱你”的？跟我们说说当时的故事吧！',
+        '你们第一次约会是去哪里？',
+        '对方做的哪一件小事最让你心动？',
+        '你们愿意相爱一生……直到死亡将你们分开吗？',
+      ],
+    },
+    instructions: {
+      en: 'Stand together in front of the screen and look at it.\nFive questions will appear at the top of the screen — answer each one out loud together.\nAfter each question from the second one, a countdown starts: get ready to pose!\nWe take four photos in total. Your photo strip prints for you, and you can download it with the QR code.',
+      zh: '两人一起站在屏幕前，看着大屏幕。\n屏幕上方会出现五个问题，请一起大声回答。\n从第二个问题开始，回答后会有倒数——准备好摆姿势！\n一共拍四张照片。照片条会自动打印，也可以扫描二维码下载。',
+    },
   },
   horror: {
     prompts: [
@@ -87,6 +108,26 @@ const THEME_PRESETS = {
     ],
     title: 'ScareBooth',
     footer: 'I survived the ScareBooth',
+    questions: {
+      en: [
+        'Introduce yourselves — who are today’s brave souls?',
+        'What is your biggest fear?',
+        'Who would survive longer in a horror movie — and why?',
+        'Who screams louder: you or your partner?',
+        'Do you promise to stay together… no matter what happens next?',
+      ],
+      zh: [
+        '先自我介绍一下——今天的勇士是谁？',
+        '你最害怕的是什么？',
+        '在恐怖片里，谁能活得更久？为什么？',
+        '谁的尖叫声更大：你还是你的另一半？',
+        '无论接下来发生什么，你们都愿意不离不弃吗？',
+      ],
+    },
+    instructions: {
+      en: 'Stand together in front of the screen and look at it.\nFive questions will appear at the top of the screen — answer each one out loud.\nAfter each question from the second one, a countdown starts: get ready to pose!\nWe take four photos in total. Your photo strip prints for you, and you can download it with the QR code.',
+      zh: '一起站在屏幕前，看着大屏幕。\n屏幕上方会出现五个问题，请大声回答。\n从第二个问题开始，回答后会有倒数——准备好摆姿势！\n一共拍四张照片。照片条会自动打印，也可以扫描二维码下载。',
+    },
   },
 };
 // Earlier versions used pose prompts; they're upgraded to the question presets if unchanged.
@@ -98,6 +139,12 @@ function applyThemePresets(target, fromTheme, toTheme) {
   const from = THEME_PRESETS[fromTheme], to = THEME_PRESETS[toTheme];
   if (!from || !to || fromTheme === toTheme) return;
   target.prompts = (target.prompts || []).map((p, i) => (p === from.prompts[i] ? to.prompts[i] : p));
+  if (target.questions) for (const lang of ['en', 'zh']) {
+    if (Array.isArray(target.questions[lang])) target.questions[lang] = target.questions[lang].map((q, i) => (q === from.questions[lang][i] ? to.questions[lang][i] : q));
+  }
+  if (target.instructions) for (const lang of ['en', 'zh']) {
+    if (target.instructions[lang] === from.instructions[lang]) target.instructions[lang] = to.instructions[lang];
+  }
   if (target.strip.title === from.title) target.strip.title = to.title;
   if (target.strip.footer === from.footer) target.strip.footer = to.footer;
 }
@@ -107,10 +154,12 @@ const DEFAULT_SETTINGS = {
   camera: { deviceId: '', label: '', resolution: '1080p', mirrorPreview: true, mirrorSaved: false, demoMode: false, fit: 'cover', portraitLayout: 'window', rotation: 0 },
   sound: { volume: 0.85, useVideoAudio: true, sting: 'builtin' },
   theme: { name: 'romance' },
-  prompts: THEME_PRESETS.romance.prompts.slice(),
+  questions: { en: THEME_PRESETS.romance.questions.en.slice(), zh: THEME_PRESETS.romance.questions.zh.slice() },
+  instructions: { ...THEME_PRESETS.romance.instructions },
   timing: {
     answerSec: 6, countdownSec: 3, // fallbacks; each question has its own time below
-    answerSecs: [6, 6, 6, 6], countdownSecs: [3, 3, 3, 3], // per question: time to answer, then countdown
+    answerSecs: [8, 6, 6, 6, 6], countdownSecs: [3, 3, 3, 3, 3], // per question (5): time to answer, then countdown (none on question 1)
+    introTimeoutSec: 90, // instructions screen: back to the start if nobody presses Start
     shotBurstCount: 8, preFlashMs: 250, flashMs: 700, postFlashMs: 300, // photos 1–3: frames before/during/after the screen flash
     scareAtMinSec: 1.2, scareAtMaxSec: 2.6, scareBlackoutMs: 200, // final photo: scare strikes this many seconds into its countdown (random in range)
     burstCount: 6, burstDurationSec: 2.5, chooseTimeoutSec: 45,
@@ -192,7 +241,19 @@ function sanitizeSettings(s) {
       volume: clamp(m.sound.volume, 0, 1, 0.85), useVideoAudio: bool(m.sound.useVideoAudio, true),
       sting: str(m.sound.sting, 300, 'builtin') || 'builtin',
     },
-    prompts: [0, 1, 2, 3].map(i => str((m.prompts || [])[i], 200, DEFAULT_SETTINGS.prompts[i])),
+    // five questions in English and Chinese; older settings had four English ones (now questions 2–5)
+    questions: (() => {
+      const q = m.questions || {}, old = Array.isArray(m.prompts) && !(s && s.questions) ? m.prompts : null;
+      const en = old ? [DEFAULT_SETTINGS.questions.en[0], ...old] : q.en || [];
+      return {
+        en: [0, 1, 2, 3, 4].map(i => str(en[i], 240, DEFAULT_SETTINGS.questions.en[i])),
+        zh: [0, 1, 2, 3, 4].map(i => str((q.zh || [])[i], 240, DEFAULT_SETTINGS.questions.zh[i])),
+      };
+    })(),
+    instructions: {
+      en: str((m.instructions || {}).en, 1200, DEFAULT_SETTINGS.instructions.en),
+      zh: str((m.instructions || {}).zh, 1200, DEFAULT_SETTINGS.instructions.zh),
+    },
     timing: {
       poseLeadSec: clamp(t.poseLeadSec, 0, 15, 3),
       answerSec: clamp(t.answerSec, 0, 60, 6),
@@ -202,8 +263,10 @@ function sanitizeSettings(s) {
       postFlashMs: Math.round(clamp(t.postFlashMs, 0, 2000, 300)),
       countdownSec: Math.round(clamp(t.countdownSec, 1, 10, 3)),
       // per question; older settings without them take the single answer/countdown time for all four
-      answerSecs: [0, 1, 2, 3].map(i => clamp((t.answerSecs || [])[i], 0, 60, clamp(t.answerSec, 0, 60, 6))),
-      countdownSecs: [0, 1, 2, 3].map(i => Math.round(clamp((t.countdownSecs || [])[i], 1, 10, Math.round(clamp(t.countdownSec, 1, 10, 3))))),
+      // per question (5). Older settings had 4 (the photo questions): they become questions 2–5.
+      answerSecs: (() => { const a = t.answerSecs || []; const v = a.length === 4 ? [8, ...a] : a; return [0, 1, 2, 3, 4].map(i => clamp(v[i], 0, 60, i ? clamp(t.answerSec, 0, 60, 6) : 8)); })(),
+      countdownSecs: (() => { const a = t.countdownSecs || []; const v = a.length === 4 ? [3, ...a] : a; return [0, 1, 2, 3, 4].map(i => Math.round(clamp(v[i], 1, 10, Math.round(clamp(t.countdownSec, 1, 10, 3))))); })(),
+      introTimeoutSec: Math.round(clamp(t.introTimeoutSec, 15, 600, 90)),
       scareAtMinSec: clamp(t.scareAtMinSec, 0, 20, 1.2),
       scareAtMaxSec: clamp(t.scareAtMaxSec, 0, 20, 2.6),
       scareBlackoutMs: clamp(t.scareBlackoutMs, 0, 1500, 200),
@@ -417,8 +480,10 @@ setInterval(() => { for (const c of clients.values()) { try { c.res.write(': pin
 // Session state machine
 // ---------------------------------------------------------------------------
 const state = {
-  phase: 'idle',          // idle | warning | pose | shooting | choose | composing | done
+  phase: 'idle',          // idle | intro | warning | shooting | choose | composing | done
   sessionId: null, shot: 0, prompt: '', message: '',
+  lang: 'en',             // the language the guests chose on the iPad: 'en' | 'zh'
+  question: 0,            // 1–5 on screen; question 1 has no photo, questions 2–5 are photos 1–4
   reactions: [], previewIndex: -1, selected: -1, stripUrl: null, photos: [],
   shareToken: null, printStatus: 'off', printCopies: 0, printAuto: false,
   pendingCmd: null, updatedAt: Date.now(),
@@ -473,6 +538,7 @@ let watchdog = null, inactivityTimer = null, doneTimer = null, nextShotTimer = n
 function publicState() {
   return {
     phase: state.phase, sessionId: state.sessionId, shot: state.shot, totalShots: 4, prompt: state.prompt,
+    lang: state.lang, question: state.question, totalQuestions: 5,
     message: state.message, reactions: state.reactions, previewIndex: state.previewIndex, selected: state.selected,
     stripUrl: state.stripUrl, photos: state.photos, displayOnline: displayOnline(), cameraOk: cameraStatus.ok,
     shareUrl: settings.share.enabled && state.stripUrl ? shareUrlFor(state.shareToken) : null,
@@ -525,6 +591,13 @@ function armTimers() {
       startCompose();
     }, settings.timing.chooseTimeoutSec * 1000);
   }
+  if (state.phase === 'intro') {
+    inactivityTimer = setTimeout(() => {
+      if (state.phase !== 'intro') return;
+      log('Nobody pressed Start on the instructions screen — back to the start');
+      resetToIdle('');
+    }, settings.timing.introTimeoutSec * 1000);
+  }
   if (state.phase === 'warning') {
     inactivityTimer = setTimeout(() => {
       log('Session', state.sessionId || '-', 'timed out from inactivity in phase', state.phase);
@@ -548,7 +621,7 @@ function resetToIdle(message = '') {
   nextShotTimer = clearTimer(nextShotTimer);
   if (state.pendingCmd) sendToDisplay({ cmd: 'abort', cmdId: state.pendingCmd.cmdId });
   if (state.sessionId) writeSessionMeta({ endedAt: new Date().toISOString(), completed: !!state.stripUrl });
-  setState({ phase: 'idle', sessionId: null, shot: 0, prompt: '', message, reactions: [], previewIndex: -1, selected: -1, stripUrl: null, photos: [], shareToken: null, printStatus: 'off', printCopies: 0, printAuto: false, pendingCmd: null });
+  setState({ phase: 'idle', sessionId: null, shot: 0, question: 0, prompt: '', message, reactions: [], previewIndex: -1, selected: -1, stripUrl: null, photos: [], shareToken: null, printStatus: 'off', printCopies: 0, printAuto: false, pendingCmd: null });
 }
 
 function issueCommand(cmd, timeoutMs, onTimeout) {
@@ -590,16 +663,20 @@ function shotFailed(reason) {
   }
 }
 
-/** Sessions run automatically: question + countdown on the main display for each photo, scare on photo 4. */
+/**
+ * Sessions run automatically on the main display. Five questions: question 1 (shot 0) is answered with no photo;
+ * questions 2–5 each end with a countdown and a photo (shots 1–4), and the scare strikes on shot 4.
+ */
 function startShot(shot) {
   nextShotTimer = clearTimer(nextShotTimer);
   const t = settings.timing;
-  const final = shot === 4;
-  const prompt = settings.prompts[shot - 1];
-  const answerSec = t.answerSecs[shot - 1], countdownSec = t.countdownSecs[shot - 1];
-  const timeout = (1 + answerSec + Math.max(countdownSec, final ? t.scareAtMaxSec : 0) + 4 + (t.preFlashMs + t.flashMs + t.postFlashMs) / 1000 + (final ? t.burstDurationSec + 40 : 0) + 20) * 1000;
-  setState({ phase: 'shooting', shot, prompt, message: '' });
-  const cmdId = issueCommand({ cmd: 'shoot', shot, final, prompt, totalShots: 4, answerSec, countdownSec }, timeout, () => shotFailed('display did not respond in time'));
+  const final = shot === 4, noPhoto = shot === 0, question = shot + 1;
+  const list = settings.questions[state.lang] || settings.questions.en;
+  const prompt = list[question - 1];
+  const answerSec = t.answerSecs[question - 1], countdownSec = t.countdownSecs[question - 1];
+  const timeout = (1 + answerSec + (noPhoto ? 0 : Math.max(countdownSec, final ? t.scareAtMaxSec : 0) + 4 + (t.preFlashMs + t.flashMs + t.postFlashMs) / 1000) + (final ? t.burstDurationSec + 40 : 0) + 20) * 1000;
+  setState({ phase: 'shooting', shot, question, prompt, message: '' });
+  const cmdId = issueCommand({ cmd: 'shoot', shot, question, totalQuestions: 5, noPhoto, final, prompt, lang: state.lang, totalShots: 4, answerSec, countdownSec }, timeout, () => shotFailed('display did not respond in time'));
   if (!cmdId) failSession('The booth screen isn’t connected. Please ask a staff member for help.');
 }
 
@@ -695,9 +772,20 @@ function updateMetaFor(sid, extra) {
 function handleControl(body) {
   const a = body.action;
   switch (a) {
-    case 'begin':
+    case 'begin': {
+      // the guests picked a language on the iPad: show the instructions in it, then wait for Start
       if (state.phase === 'done') resetToIdle('');
       if (state.phase !== 'idle') return { ok: false, error: 'A session is already in progress.' };
+      if (!displayOnline()) return { ok: false, error: 'The booth screen isn’t connected yet. Please ask a staff member.' };
+      setState({ phase: 'intro', lang: body.lang === 'zh' ? 'zh' : 'en', message: '' });
+      return { ok: true };
+    }
+    case 'back':
+      if (state.phase !== 'intro') return { ok: false, error: 'Not on the instructions screen.' };
+      resetToIdle('');
+      return { ok: true };
+    case 'start':
+      if (state.phase !== 'intro') return { ok: false, error: 'Not on the instructions screen.' };
       if (!displayOnline()) return { ok: false, error: 'The booth screen isn’t connected yet. Please ask a staff member.' };
       if (settings.flow.showWarning) { setState({ phase: 'warning', message: '' }); return { ok: true }; }
       state.phase = 'warning'; // straight through to the first question, no warning screen
@@ -715,9 +803,9 @@ function handleControl(body) {
       state.shareToken = newShareToken(); state.printStatus = 'off'; state.printCopies = 0;
       shareTokens.set(state.shareToken, id);
       retryCount = 0;
-      writeSessionMeta({ startedAt: new Date().toISOString(), prompts: settings.prompts, warningAccepted: true, shareToken: state.shareToken });
-      log('Session started', id);
-      startShot(1);
+      writeSessionMeta({ startedAt: new Date().toISOString(), lang: state.lang, questions: settings.questions[state.lang], warningAccepted: true, shareToken: state.shareToken });
+      log('Session started', id, 'language', state.lang);
+      startShot(0);
       return { ok: true };
     }
     case 'preview': {
@@ -811,6 +899,12 @@ function handleDisplayReport(body) {
   watchdog = clearTimer(watchdog);
   state.pendingCmd = null;
 
+  if (r.type === 'shotDone' && state.shot === 0) {
+    // question 1 answered (no photo): on to question 2 and the first photo
+    retryCount = 0;
+    nextShotTimer = setTimeout(() => startShot(1), 600);
+    return { ok: true };
+  }
   if (r.type === 'shotDone') {
     const shot = state.shot;
     const photos = state.photos.slice(); photos[shot - 1] = sessionUrl(state.sessionId, `photo${shot}.jpg`);
@@ -1127,7 +1221,7 @@ async function route(req, res) {
     const body = await readJson(req);
     const prevTheme = settings.theme.name;
     settings = sanitizeSettings(deepMerge(settings, body));
-    if (settings.theme.name !== prevTheme && !body.prompts && !(body.strip && (body.strip.title || body.strip.footer))) {
+    if (settings.theme.name !== prevTheme && !body.questions && !body.instructions && !(body.strip && (body.strip.title || body.strip.footer))) {
       applyThemePresets(settings, prevTheme, settings.theme.name);
       settings = sanitizeSettings(settings);
     }
@@ -1304,12 +1398,23 @@ function sharePage(res, sid, token) {
     let meta = {}; try { meta = JSON.parse(fs.readFileSync(path.join(sessionDir(sid), 'session.json'), 'utf8')); } catch (_) {}
     const pick = meta.autoSelectedReaction || (Array.isArray(meta.reactions) && meta.selected >= 0 && meta.reactions[meta.selected] ? meta.reactions[meta.selected].file : null);
     const singles = ['photo1.jpg', 'photo2.jpg', 'photo3.jpg', pick].filter(f => f && files.includes(f));
-    body = `<div class="eyebrow">${theme === 'horror' ? 'You survived' : 'Happily ever after'}</div><div class="logo">${title}</div>` +
-      (files.includes('strip.jpg') ? `<img class="strip" src="/d/${token}/strip.jpg" alt="Your photo strip">
-      <a class="btn" href="/d/${token}/strip.jpg?download=1" download>Download strip</a>
-      <p><b>iPhone:</b> tap and hold the strip, then choose <b>Save to Photos</b>. <b>Android:</b> tap Download, or tap and hold the image.</p>` : `<p>Your strip is still being made — refresh in a moment.</p>`) +
-      (singles.length ? `<h2>Single photos</h2><div class="grid">${singles.map(f => `<a href="/d/${token}/${f}?download=1" download><img src="/d/${token}/${f}" alt=""></a>`).join('')}</div>` : '') +
-      `<p>This page works while you’re connected to the booth’s Wi-Fi. Save your photos before you leave!</p>`;
+    // in the language the guests chose at the booth
+    const zh = meta.lang === 'zh';
+    const T = zh ? {
+      eyebrow: theme === 'horror' ? '你活下来了' : '从此幸福快乐', alt: '你们的照片条', dl: '下载照片条',
+      howto: '<b>iPhone：</b>长按照片条，选择<b>存储到“照片”</b>。<b>安卓：</b>点“下载”，或长按图片保存。',
+      making: '照片条还在制作中——请稍后刷新。', singles: '单张照片', wifi: '连接拍照亭的 Wi-Fi 时才能打开此页面。离开前请保存好你们的照片！',
+    } : {
+      eyebrow: theme === 'horror' ? 'You survived' : 'Happily ever after', alt: 'Your photo strip', dl: 'Download strip',
+      howto: '<b>iPhone:</b> tap and hold the strip, then choose <b>Save to Photos</b>. <b>Android:</b> tap Download, or tap and hold the image.',
+      making: 'Your strip is still being made — refresh in a moment.', singles: 'Single photos', wifi: 'This page works while you’re connected to the booth’s Wi-Fi. Save your photos before you leave!',
+    };
+    body = `<div class="eyebrow">${T.eyebrow}</div><div class="logo">${title}</div>` +
+      (files.includes('strip.jpg') ? `<img class="strip" src="/d/${token}/strip.jpg" alt="${T.alt}">
+      <a class="btn" href="/d/${token}/strip.jpg?download=1" download>${T.dl}</a>
+      <p>${T.howto}</p>` : `<p>${T.making}</p>`) +
+      (singles.length ? `<h2>${T.singles}</h2><div class="grid">${singles.map(f => `<a href="/d/${token}/${f}?download=1" download><img src="/d/${token}/${f}" alt=""></a>`).join('')}</div>` : '') +
+      `<p>${T.wifi}</p>`;
   }
   res.writeHead(sid ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(head + body + '</body></html>');

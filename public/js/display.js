@@ -177,7 +177,8 @@
     const prev = settings;
     settings = p.settings; sounds = p.sounds || [];
     SB.applyTheme(settings); SB.loveParticles($('#love'));
-    if (state.phase === 'idle') $('#attractLine').textContent = SB.themeText('attractLine');
+    if (state.phase === 'idle') $('#attractLine').textContent = SB.themeText('attractLine', 'en') + '\n' + SB.themeText('attractLine', 'zh');
+    else SB.setLang(SB.getLang());
     const prevScare = scareDesc; scareDesc = p.scare;
     audio.setVolume(settings.sound.volume);
     renderer.setAudioOptions({ useVideoAudio: settings.sound.useVideoAudio, stingKind: stingKind() });
@@ -197,8 +198,8 @@
 
   // ------------------------------------------------------------------ UI per phase
   function layerOn(...ids) { for (const el of $$('.layer')) el.classList.toggle('on', ids.includes(el.id)); }
-  function showQuestion(shot, total, prompt) {
-    $('#shotNo').textContent = `Question ${shot} of ${total || 4}`;
+  function showQuestion(question, total, prompt) {
+    $('#shotNo').textContent = SB.tr('question', undefined, { n: question, total: total || 5 });
     $('#promptText').textContent = prompt || '';
     const lower = $('#lower');
     lower.classList.remove('counting', 'answering', 'pop'); void lower.offsetWidth; lower.classList.add('pop');
@@ -207,15 +208,27 @@
   function onState(s) {
     const prev = state; state = s;
     document.body.className = document.body.className.replace(/\bphase-\S+/g, '').trim() + ' phase-' + s.phase;
+    // guests' language (the start screen shows both)
+    const lang = s.phase === 'idle' ? 'en' : (s.lang || 'en');
+    if (SB.getLang() !== lang || !onState.langSet) { SB.setLang(lang); onState.langSet = true; }
     // The live camera is only shown once Start is pressed (it keeps running hidden so the start is instant).
-    document.body.classList.toggle('cam-off', ['idle', 'warning', 'done'].includes(s.phase));
+    document.body.classList.toggle('cam-off', ['idle', 'intro', 'warning', 'done'].includes(s.phase));
     if (demo) demo.setPose(Math.max(0, (s.shot || 1) - 1));
     switch (s.phase) {
-      case 'idle': layerOn('attract'); $('#attractLine').textContent = SB.themeText('attractLine'); break;
+      case 'idle':
+        layerOn('attract');
+        $('#attractLine').textContent = SB.themeText('attractLine', 'en') + '\n' + SB.themeText('attractLine', 'zh');
+        $('#attractCta').textContent = SB.tr('pickLang', 'en') + ' · ' + SB.tr('pickLang', 'zh');
+        break;
+      case 'intro': {
+        const text = settings && settings.instructions ? (settings.instructions[lang] || settings.instructions.en) : '';
+        $('#introSteps').innerHTML = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => `<li>${esc(l)}</li>`).join('');
+        layerOn('intro'); break;
+      }
       case 'warning': layerOn('attract'); $('#attractLine').textContent = SB.themeText('warningAttract'); break;
       case 'shooting':
         // Between photos (before the next shoot command arrives) keep the upcoming question on screen.
-        if (!busy) { showQuestion(s.shot, s.totalShots, s.prompt); layerOn('lower'); }
+        if (!busy) { showQuestion(s.question || s.shot + 1, s.totalQuestions, s.prompt); layerOn('lower'); }
         break;
       case 'choose': renderChoose(s, prev.phase !== 'choose'); layerOn('choose'); break;
       case 'composing': layerOn('developing'); break;
@@ -231,16 +244,17 @@
     $('#qrDlBox').hidden = !s.shareUrl;
     // With the internet link up, any phone can open it — no need to join the booth Wi-Fi first.
     const wifi = !s.shareOnline && share && share.wifiSsid && s.shareUrl ? SB.wifiQrText(share) : '';
-    $('#qrNote').textContent = s.shareOnline ? 'Works on mobile data' : '';
+    $('#qrNote').textContent = s.shareOnline ? ' · ' + SB.tr('mobileData') : '';
     $('#qrWifi').innerHTML = wifi ? SB.qrSvg(wifi) : '';
     $('#qrWifiBox').hidden = !wifi;
     $('#qrWifiName').textContent = share && share.wifiSsid ? share.wifiSsid : '';
     $('#qrStep').textContent = wifi ? '2' : '';
+    const strips = s.printCopies * (s.stripsPerPrint || 1), tr = SB.tr;
     const lines = {
-      ask: s.printDefault > 0 ? `How many prints? Choose on the iPad (otherwise we’ll print ${s.printDefault}).` : 'How many prints? Choose on the iPad.',
-      printing: s.printFixed ? `Printing your ${s.printCopies * (s.stripsPerPrint || 1)} photo strips…` : `Printing ${s.printCopies} ${s.printCopies === 1 ? 'copy' : 'copies'}…`,
-      printed: 'Your prints are on the way!',
-      error: 'There was a printing problem — please ask a staff member.',
+      ask: s.printDefault > 0 ? tr('askPrintsDisplayDefault', undefined, { n: s.printDefault }) : tr('askPrintsDisplay'),
+      printing: s.printFixed ? (strips === 1 ? tr('printingStrip1') : tr('printingStrips', undefined, { n: strips })) : (s.printCopies === 1 ? tr('printingCopy1') : tr('printingCopies', undefined, { n: s.printCopies })),
+      printed: tr('printedDisplay'),
+      error: tr('printError'),
     };
     $('#printLine').textContent = lines[s.printStatus] || '';
   }
@@ -563,14 +577,21 @@
     try {
       if (!cameraReady()) throw new Error('The camera isn’t ready (' + camera.message + ').');
       if (cmd.final && !renderer.ready) throw new Error('The scare hasn’t loaded (' + (scareMessage || 'still loading') + ').');
-      if (cmd.shot === 1) { pendingWork = Promise.resolve(); startRecording(cmd.sessionId); }
-      // 1) the question pops up, 2) answer time, 3) countdown, 4) flash + photo burst
-      showQuestion(cmd.shot, cmd.totalShots, cmd.prompt || state.prompt);
+      const question = cmd.question || cmd.shot + 1;
+      if (cmd.shot === 0 || (cmd.shot === 1 && !rec.mr)) { pendingWork = Promise.resolve(); startRecording(cmd.sessionId); }
+      // 1) the question pops up at the top, 2) answer time, 3) countdown (the question goes away), 4) flash + photo burst
+      showQuestion(question, cmd.totalQuestions, cmd.prompt || state.prompt);
       layerOn('lower');
       await wait(700, token); // let the question land before the timer starts
-      const answerSec = cmd.answerSec ?? (t.answerSecs ? t.answerSecs[cmd.shot - 1] : t.answerSec) ?? 0;
-      const countdownSec = cmd.countdownSec ?? (t.countdownSecs ? t.countdownSecs[cmd.shot - 1] : t.countdownSec) ?? 3;
+      const answerSec = cmd.answerSec ?? (t.answerSecs ? t.answerSecs[question - 1] : t.answerSec) ?? 0;
+      const countdownSec = cmd.countdownSec ?? (t.countdownSecs ? t.countdownSecs[question - 1] : t.countdownSec) ?? 3;
       await answerTime(answerSec, token);
+      if (cmd.noPhoto) {
+        // question 1: just talk, no photo
+        check(token);
+        report({ type: 'shotDone', cmdId: cmd.cmdId, shot: 0 });
+        return;
+      }
       let scareAtMs = 0;
       if (cmd.final) {
         // finish the background best-photo check for photo 3 first, so the scare has the PC to itself

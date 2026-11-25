@@ -104,3 +104,6 @@ legend label { margin: 0; }
 .wiz-sw.on { border-color: #e0434b; box-shadow: 0 0 0 1px #e0434b inset; }
 .wiz-sw.custom { position: relative; }
 .wiz-sw.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.qblock { padding: 10px 0 4px; border-top: 1px solid var(--line); }
+.qblock:first-of-type { border-top: 0; }
+.qblock textarea { width: 100%; }

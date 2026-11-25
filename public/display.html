@@ -29,16 +29,24 @@
       <div class="attract-card">
         <div class="logo big" data-title>Till Death Do Us Part</div>
         <p class="type tagline" id="attractLine"></p>
-        <div class="eyebrow cta"><span class="ember"></span> Press Start on the iPad to begin <span class="ember"></span></div>
+        <div class="eyebrow cta"><span class="ember"></span> <span id="attractCta">Choose your language on the iPad to begin</span> <span class="ember"></span></div>
+      </div>
+    </section>
+
+    <section id="intro" class="layer">
+      <div class="intro-card">
+        <div class="eyebrow" data-i18n="howItWorks"></div>
+        <div class="logo intro-title" data-title>Till Death Do Us Part</div>
+        <ol class="steps" id="introSteps"></ol>
+        <div class="eyebrow cta"><span class="ember"></span> <span data-i18n="introDisplayCta"></span> <span class="ember"></span></div>
       </div>
     </section>
 
     <section id="lower" class="layer">
       <div class="lower-card">
-        <div class="eyebrow shotno" id="shotNo">Question 1 of 4</div>
+        <div class="eyebrow shotno" id="shotNo">Question 1 of 5</div>
         <div class="type prompt" id="promptText">…</div>
-        <div class="answer"><div class="answer-bar"><i id="answerFill"></i></div><div class="eyebrow answer-label">Answer now…</div></div>
-        <div class="type pose-line">Now strike a pose!</div>
+        <div class="answer"><div class="answer-bar"><i id="answerFill"></i></div><div class="eyebrow answer-label" data-i18n="answerNow">Answer now…</div></div>
       </div>
     </section>
 
@@ -47,7 +55,7 @@
     <section id="choose" class="layer">
       <div class="choose-wrap">
         <div class="eyebrow" data-t="chooseEyebrow"></div>
-        <h2 class="type">Choose your favourite scream on the iPad</h2>
+        <h2 class="type" data-i18n="chooseScream"></h2>
         <div class="choose-preview"><img id="choosePreview" alt=""></div>
         <div class="filmstrip" id="filmstrip"></div>
       </div>
@@ -59,11 +67,11 @@
       <div class="done-wrap">
         <div class="done-text">
           <div class="eyebrow" data-t="doneEyebrow"></div>
-          <h2 class="logo">Your strip is ready</h2>
+          <h2 class="logo" data-i18n="stripReady"></h2>
           <p class="type print-line" id="printLine"></p>
           <div class="qrs">
-            <div class="qr" id="qrWifiBox" hidden><div class="qr-img" id="qrWifi"></div><div class="qr-cap"><b>1</b> Join Wi-Fi<br><span id="qrWifiName"></span></div></div>
-            <div class="qr" id="qrDlBox" hidden><div class="qr-img" id="qrDl"></div><div class="qr-cap"><b id="qrStep">2</b> Scan to download<br>your photos<span id="qrNote"></span></div></div>
+            <div class="qr" id="qrWifiBox" hidden><div class="qr-img" id="qrWifi"></div><div class="qr-cap"><b>1</b> <span data-i18n="joinWifi"></span><br><span id="qrWifiName"></span></div></div>
+            <div class="qr" id="qrDlBox" hidden><div class="qr-img" id="qrDl"></div><div class="qr-cap"><b id="qrStep">2</b> <span data-i18n-html="scanDownloadLong"></span><span id="qrNote"></span></div></div>
           </div>
         </div>
         <img id="stripImg" alt="Photo strip">

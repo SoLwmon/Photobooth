@@ -1,6 +1,6 @@
 # ScareBooth
 
-A local horror photobooth. Guests take four photos. The first three are normal. During the fourth, a jump-scare appears inside the live camera picture while the booth quietly takes a burst of reaction shots. The iPad is only used to start a session. Everything else happens on the main display, and ScareBooth automatically picks the biggest reaction for the 4-photo strip.
+A local horror photobooth. Guests choose English or 中文, read how it works, then answer five questions on the big screen; four of them end in a photo. The first three are normal. During the fourth, a jump-scare appears inside the live camera picture while the booth quietly takes a burst of reaction shots. The iPad is only used to start a session. Everything else happens on the main display, and ScareBooth automatically picks the biggest reaction for the 4-photo strip.
 
 Everything runs on one Windows PC. You don't need an account, a cloud service or internet access during the event.
 
@@ -66,18 +66,20 @@ Other options are documented in the comments at the top of that file: the port n
 
 ## 3. Guest experience
 
-1. **iPad → Start.** The session starts straight away. That's the only time guests touch the iPad until the print question. The session video starts recording now.
-2. **For each of the 4 photos, on the main display:**
-   - **The question pops up** above the camera picture (e.g. *"Who said 'I love you' first?"*).
-   - **An answer timer** (6 s by default, set per question) drains while the couple answers out loud.
-   - **"Now strike a pose!"** and the heart **countdown** 3-2-1 below the camera picture.
-3. **Photos 1–3:** the **main display blinks black** as the photo is taken. Faces are lit by the room light, or by the flash light if you switch on *Also fire the flash light for photos 1–3* in the Lights card. (To make the screen itself the flash instead, choose *White* under *Timing & photos → Screen flash colour*.) The booth takes a burst of photos **before, during and after** the flash (8 by default) and **keeps the best one**: eyes open, faces well lit (not too dark or blown out), sharp, and everyone in the picture. If the lights box is set up, the flash light can fire too.
-4. **Photo 4, the jump scare:** the question and countdown start as normal, but the **jump-scare video cuts in early**, at a random moment during the countdown. At the same instant **the room light turns off, the LED strip turns red and the flash light comes on**. 6 reaction photos are taken, then the lights go back to normal. **The booth picks the best reaction itself:** the biggest jump, well lit, sharp, faces visible.
-5. **The session video stops** once the last photo is taken. It's saved on the PC only.
-6. **The strip appears on the main display** and is saved on the PC.
-7. **The strip prints automatically:** one 4R sheet, cut into **2 strips** (if printing is on). If you turn on *Ask guests how many prints they want*, the iPad asks instead.
-8. **QR codes appear** on the main display and the iPad, so guests can download the strip and photos on their phone.
-9. After 25 s, or when someone taps **Start a new session** on the iPad, the booth resets.
+1. **iPad → choose a language: English or 中文.** Everything the guests see from here on (instructions, questions, countdown labels, print and download messages, the phone download page) is in that language. The start screen shows both.
+2. **Instructions** appear on the iPad and the main display (*How it works*, editable in the console; the scare is never mentioned). Guests press **Start** on the iPad (or **Back**). After 90 s with nobody pressing Start, the booth returns to the language screen. The session video starts recording when they press Start.
+3. **Five questions on the main display, at the top of the screen:**
+   - **Question 1 is a warm-up:** the couple answers it, and **no photo is taken**.
+   - **Questions 2–5 each end in a photo** (4 photos in total).
+   - **The question pops up at the top**, and **an answer timer** drains while the couple answers out loud (time set per question).
+   - **The question disappears** and the heart **countdown** 3-2-1 runs over the camera picture.
+4. **Photos 1–3 (questions 2–4):** the **main display blinks black** as the photo is taken. Faces are lit by the room light, or by the flash light if you switch on *Also fire the flash light for photos 1–3* in the Lights card. (To make the screen itself the flash instead, choose *White* under *Timing & photos → Screen flash colour*.) The booth takes a burst of photos **before, during and after** the flash (8 by default) and **keeps the best one**: eyes open, faces well lit (not too dark or blown out), sharp, and everyone in the picture. If the lights box is set up, the flash light can fire too.
+5. **Photo 4, the jump scare (question 5):** the question and countdown start as normal, but the **jump-scare video cuts in early**, at a random moment during the countdown. At the same instant **the room light turns off, the LED strip turns red and the flash light comes on**. 6 reaction photos are taken, then the lights go back to normal. **The booth picks the best reaction itself:** the biggest jump, well lit, sharp, faces visible.
+6. **The session video stops** once the last photo is taken. It's saved on the PC only.
+7. **The strip appears on the main display** and is saved on the PC.
+8. **The strip prints automatically:** one 4R sheet, cut into **2 strips** (if printing is on). If you turn on *Ask guests how many prints they want*, the iPad asks instead.
+9. **QR codes appear** on the main display and the iPad, so guests can download the strip and photos on their phone.
+10. After 25 s, or when someone taps **Start a new session** on the iPad, the booth goes back to the language screen.
 
 *Optional (console → Timing & photos):* show a warning screen before starting, or let guests pick the final photo on the iPad.
 
@@ -106,12 +108,13 @@ Each session is recorded from Start until the last photo: the camera picture plu
 | **Sound** | Set the master volume. Choose the sting sound (built-in, none, or an uploaded MP3/WAV/OGG/M4A). Choose whether to play the scare video's own audio. **Test sound** plays it on the booth. |
 | **QR download** | Turn the QR code on or off, choose the PC address it uses, and enter the booth Wi-Fi details for the *Join Wi-Fi* code. |
 | **Printing** | Ask guests how many prints, set the maximum (4), choose what prints if they don't answer (1 copy), choose the paper layout, run a test print, and see the sheets-printed counter. Reprints are done from the gallery. |
-| **Questions** | The four questions, each with its own **time to answer** (default 6 s) and **countdown** (default 3 s), e.g. a longer answer time for a story question and 0 s for the final vow. The scare strikes during question 4's countdown. |
+| **Questions** | The **five questions in English and 中文**. Question 1 is a warm-up with no photo; questions 2–5 each end in a photo. Each has its own **time to answer**, and questions 2–5 their own **countdown**. The scare strikes during question 5's countdown. |
+| **Instructions** | The *How it works* steps shown after the language is chosen, in English and 中文, one step per line. |
 | **Timing & photos** | Screen flash on/off and its length, how many photos are taken around each flash (8), when the scare strikes during the final countdown, the number of jump-scare reaction photos (6), and the optional warning screen and iPad picker.  **Black flash before the scare** (default 200 ms, 0 = off): on the last photo the screen cuts to black for a moment and comes back with the scare already there, so it appears out of nowhere. For “3, 2, black, scare”, set *Scare strikes* earliest and latest to about 2.0 s with a 3 s countdown.|
 | **Session video** | Record on/off, sound on/off, which microphone, video quality, and whether to keep every burst photo (not only the best). |
 | **Lights** | Connect the ScareBooth Lights box (or the Simulator), live preview of the room light, strip and flash, test buttons (including **⚡ Test jump-scare lights**), colours, brightness, LED count, and timing. |
 | **WiZ bulb** | Find WiZ bulbs on the network, connection status, live colour preview, idle / session / jump-scare colours and brightness, test buttons. |
-| **Questions on the main display** | Edit the four questions the couple answers (and the optional warning text). |
+| **Questions on the main display** | Edit the five questions in both languages (and the optional warning text). |
 | **Photo strip** | Set the title, footer line and whether the date shows. **Preview strip design** shows a sample. |
 
 Settings save as you change them. They go straight to the display and iPad, and they're stored in `data\settings.json`.

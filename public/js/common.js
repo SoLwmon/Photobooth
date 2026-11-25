@@ -98,8 +98,94 @@
       warningAttract: 'Please read the note on the iPad…',
     },
   };
-  let currentTheme = null;
-  function themeText(key) { return (THEME_TEXT[currentTheme || 'romance'] || THEME_TEXT.romance)[key] || ''; }
+  // Chinese wording for the same theme keys
+  const THEME_TEXT_ZH = {
+    horror: {
+      attractLine: '走进来，摆个姿势，尽量保持冷静。', chooseEyebrow: '你的反应已被拍下', developing: '正在冲洗你的照片条',
+      doneEyebrow: '你活下来了', welcome: '欢迎，勇敢的人', lead: '跟着大屏幕上的问题，一共拍四张照片。<br>无论发生什么……都要一直看着屏幕。',
+      warnEyebrow: '进入之前', ipadDoneEyebrow: '你活下来了', warningAttract: '请先阅读 iPad 上的提示……',
+    },
+    romance: {
+      attractLine: '和你的真爱一起摆个姿势吧……', chooseEyebrow: '美好瞬间已被拍下', developing: '正在书写你们的爱情故事',
+      doneEyebrow: '从此幸福快乐', welcome: '欢迎，甜蜜的爱侣', lead: '跟着大屏幕上的问题，一起拍四张照片。<br>无论发生什么……都要一直看着屏幕。',
+      warnEyebrow: '在说“我愿意”之前', ipadDoneEyebrow: '从此幸福快乐', warningAttract: '请先阅读 iPad 上的说明……',
+    },
+  };
+  let currentTheme = null, currentLang = 'en';
+  function themeText(key, lang = currentLang) {
+    const set = lang === 'zh' ? THEME_TEXT_ZH : THEME_TEXT;
+    return (set[currentTheme || 'romance'] || set.romance)[key] || themeTextEn(key);
+  }
+  function themeTextEn(key) { return (THEME_TEXT[currentTheme || 'romance'] || THEME_TEXT.romance)[key] || ''; }
+
+  // ---------------------------------------------------------------- guest-facing wording, English and Chinese
+  // {n}, {total}… are filled in by tr(). Staff/operator messages stay in English.
+  const STRINGS = {
+    en: {
+      chooseLang: 'Choose your language', english: 'English', chinese: '中文',
+      pressStart: 'Press Start on the iPad to begin', pickLang: 'Choose your language on the iPad to begin',
+      howItWorks: 'How it works', start: 'Start', back: 'Back',
+      readyWhenYouAre: 'Press Start when you’re ready', introDisplayCta: 'Press Start on the iPad when you’re ready',
+      question: 'Question {n} of {total}', answerNow: 'Answer now…', strikePose: 'Now strike a pose!',
+      lookBig: 'Look at the big screen', lookBigSub: 'Your questions and countdowns are up there.',
+      developingIpad: 'Developing your strip…', stripReady: 'Your strip is ready',
+      howManyPrints: 'How many prints would you like?', eachPrint2: 'Each print is 2 photo strips', noPrints: 'No prints',
+      ifNoChoice: 'If you don’t choose, we’ll print {n} for you.',
+      printingStrips: 'Printing your {n} photo strips…', printingStrip1: 'Printing your photo strip…',
+      printingCopies: 'Printing {n} copies…', printingCopy1: 'Printing 1 copy…',
+      printed: 'Printed! Collect your strips from the printer.', printedDisplay: 'Your prints are on the way!',
+      printError: 'There was a printing problem — please ask a staff member.',
+      askPrintsDisplay: 'How many prints? Choose on the iPad.', askPrintsDisplayDefault: 'How many prints? Choose on the iPad (otherwise we’ll print {n}).',
+      joinWifi: 'Join Wi-Fi', scanDownload: 'Scan to download', scanDownloadLong: 'Scan to download<br>your photos', mobileData: 'Works on mobile data',
+      newSession: 'Start a new session', resetsIn: 'The booth resets in {n}s', autoPrintIn: 'Printing {d} automatically in {n}s',
+      chooseScream: 'Choose your favourite scream on the iPad', finalPhoto: 'The final photo', pickReaction: 'Pick your best reaction',
+      pickHint: 'Tap a photo to see it bigger, then tap <b>Use this one</b>.', useThis: 'Use this one',
+      noPickIn: 'No pick in {n}s? We’ll choose the biggest reaction for you.',
+      ready: 'Ready', reconnecting: 'Reconnecting to booth…', displayOffline: 'Booth screen offline', cameraNotReady: 'Camera not ready',
+      gettingReady: 'The booth is getting ready… please ask a staff member if this doesn’t clear.',
+      warnTitle: 'Sudden visuals & loud sound', noThanks: 'No thanks', iUnderstand: 'I understand — Start',
+    },
+    zh: {
+      chooseLang: '请选择语言', english: 'English', chinese: '中文',
+      pressStart: '请在 iPad 上按“开始”', pickLang: '请在 iPad 上选择语言开始',
+      howItWorks: '玩法说明', start: '开始', back: '返回',
+      readyWhenYouAre: '准备好了就按“开始”', introDisplayCta: '准备好了，请在 iPad 上按“开始”',
+      question: '第 {n} 题 / 共 {total} 题', answerNow: '请回答……', strikePose: '摆个姿势吧！',
+      lookBig: '请看大屏幕', lookBigSub: '问题和倒数都会出现在大屏幕上。',
+      developingIpad: '正在冲洗你们的照片条……', stripReady: '你们的照片条完成了',
+      howManyPrints: '要打印几张？', eachPrint2: '每张打印出来是两条照片条', noPrints: '不打印',
+      ifNoChoice: '如果不选择，我们会为你打印 {n} 张。',
+      printingStrips: '正在打印你们的 {n} 条照片条……', printingStrip1: '正在打印你们的照片条……',
+      printingCopies: '正在打印 {n} 张……', printingCopy1: '正在打印 1 张……',
+      printed: '打印好了！请到打印机领取照片条。', printedDisplay: '照片正在打印中！',
+      printError: '打印出了点问题，请联系工作人员。',
+      askPrintsDisplay: '要打印几张？请在 iPad 上选择。', askPrintsDisplayDefault: '要打印几张？请在 iPad 上选择（否则将打印 {n} 张）。',
+      joinWifi: '连接 Wi-Fi', scanDownload: '扫码下载', scanDownloadLong: '扫码下载<br>你们的照片', mobileData: '用手机流量也可以',
+      newSession: '重新开始', resetsIn: '{n} 秒后返回开始画面', autoPrintIn: '{n} 秒后自动打印 {d} 张',
+      chooseScream: '请在 iPad 上选出最喜欢的一张', finalPhoto: '最后一张照片', pickReaction: '选出你们最好的反应',
+      pickHint: '点一张照片放大，再点 <b>就用这张</b>。', useThis: '就用这张',
+      noPickIn: '{n} 秒内没有选择？我们会帮你选反应最大的一张。',
+      ready: '准备就绪', reconnecting: '正在重新连接……', displayOffline: '大屏幕未连接', cameraNotReady: '相机未就绪',
+      gettingReady: '拍照亭正在准备中……如果一直没好，请联系工作人员。',
+      warnTitle: '突然的画面和巨大声响', noThanks: '不了，谢谢', iUnderstand: '我明白了——开始',
+    },
+  };
+  function tr(key, lang = currentLang, vars = {}) {
+    let t = (STRINGS[lang] || STRINGS.en)[key];
+    if (t == null) t = STRINGS.en[key] || key;
+    return t.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? vars[k] : ''));
+  }
+  /** Switch the page's guest-facing language: elements with data-i18n (text) / data-i18n-html (HTML), plus themed text. */
+  function setLang(lang) {
+    currentLang = lang === 'zh' ? 'zh' : 'en';
+    document.documentElement.lang = currentLang === 'zh' ? 'zh-Hans' : 'en';
+    document.body.classList.toggle('lang-zh', currentLang === 'zh');
+    for (const el of $$('[data-i18n]')) el.textContent = tr(el.dataset.i18n);
+    for (const el of $$('[data-i18n-html]')) el.innerHTML = tr(el.dataset.i18nHtml);
+    for (const el of $$('[data-t]')) el.textContent = themeText(el.dataset.t);
+    for (const el of $$('[data-th]')) el.innerHTML = themeText(el.dataset.th);
+  }
+  function getLang() { return currentLang; }
   /** Apply the theme class, the booth title and themed wording to the page. */
   function applyTheme(settings) {
     const name = (settings && settings.theme && settings.theme.name) || 'romance';
@@ -138,5 +224,5 @@
     document.addEventListener('DOMContentLoaded', () => { if (!currentTheme) { document.body.classList.add('theme-' + t); document.body.classList.toggle('grain', t === 'horror'); } });
   } catch (_) {}
 
-  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles };
+  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles, tr, setLang, getLang };
 })();
