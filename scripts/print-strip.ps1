@@ -3,7 +3,12 @@ param(
   [string]$Printer = '',
   [ValidateSet('4x6-double', '4x6-single', '2x6')][string]$Layout = '4x6-double',
   [int]$Sheets = 1,
-  [string]$JobName = 'ScareBooth'
+  [string]$JobName = 'ScareBooth',
+  # Fine-tuning for printers that don't print exactly where the page says (e.g. DNP borderless):
+  # + moves the picture right / down, in millimetres; ScalePct shrinks or grows it around the centre.
+  [double]$OffsetXmm = 0,
+  [double]$OffsetYmm = 0,
+  [double]$ScalePct = 100
 )
 # Sends a ScareBooth strip straight to a Windows printer (no dialog, no browser).
 # Prints "OK <printer name>" on success, or "ERROR: <reason>" and exits 1.
@@ -65,6 +70,10 @@ try {
       $W = $ph; $H = $pw
     } else { $W = $pw; $H = $ph }
     $g.Clear([System.Drawing.Color]::White)
+    # position fine-tuning (page units are 1/100 inch): scale around the centre, then shift
+    $k = [single]($ScalePct / 100.0)
+    $g.TranslateTransform([single]($OffsetXmm / 25.4 * 100), [single]($OffsetYmm / 25.4 * 100))
+    $g.TranslateTransform($W / 2, $H / 2); $g.ScaleTransform($k, $k); $g.TranslateTransform(-$W / 2, -$H / 2)
     switch ($script:layout) {
       '4x6-double' { $rects = @((New-Object System.Drawing.RectangleF(0, 0, ($W / 2), $H)), (New-Object System.Drawing.RectangleF(($W / 2), 0, ($W / 2), $H))) }
       '4x6-single' { $sw = $H / 3; $rects = @((New-Object System.Drawing.RectangleF((($W - $sw) / 2), 0, $sw, $H))) }

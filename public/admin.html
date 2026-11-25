@@ -387,7 +387,16 @@
       <select data-path="print.stripsPerPrint"><option value="2">2 strips (one 4R sheet, cut in two)</option><option value="1">1 strip (strips counted singly; 3 prints uses 2 sheets)</option></select></div>
       <p class="muted small" id="dnpNote" hidden><b style="color:#f3d6a0">DNP printer:</b> open <i>Printing preferences → Advanced</i>, set <b>Paper Size: PR (4x6)</b> and <b>2inch cut: Enable</b>, then OK. ScareBooth picks PR (4x6) for you, but the cut switch lives in the driver. Press <b>Test print</b> — two separate strips should come out.</p>
       <p class="muted small">Reprint any past strip from the <a href="/gallery" target="_blank" style="color:#ffb3b8">gallery</a>. Set paper size and borderless in the printer’s Windows <i>Printing preferences</i> — ScareBooth also picks a 4×6 / 2×6 paper size automatically when the driver offers one. </p>
-      <div class="actions"><button class="btn small" data-cmd="testPrint">🖨 Test print</button><span class="muted" id="printCount"></span><button class="btn small ghost" id="resetPrints">Reset counter</button></div>
+      <div class="print-adjust">
+        <label>Print position &amp; size <span class="muted small">(if the printed strip is shifted or cut at an edge)</span></label>
+        <div class="split three">
+          <div><label class="small">Move up / down (mm, − = up)</label><input type="number" min="-15" max="15" step="0.5" data-path="print.offsetYmm"></div>
+          <div><label class="small">Move left / right (mm, − = left)</label><input type="number" min="-15" max="15" step="0.5" data-path="print.offsetXmm"></div>
+          <div><label class="small">Size (%)</label><input type="number" min="85" max="110" step="0.5" data-path="print.scalePct"></div>
+        </div>
+        <p class="muted small">Press <b>📏 Alignment test</b>: it prints coloured frames 1 mm apart on every edge. On each edge, read the number of the first frame you can see fully. <b>Top and bottom should match</b> — if the top shows <b>0</b> and the bottom <b>3</b>, the picture is 1.5 mm too low: set <b>Move up/down</b> to <b>−1.5</b>. Same for left/right. If both ends are cut, lower <b>Size</b> to about <b>97</b>.</p>
+      </div>
+      <div class="actions"><button class="btn small" data-cmd="testPrint">🖨 Test print</button><button class="btn small ghost" data-cmd="alignPrint">📏 Alignment test</button><span class="muted" id="printCount"></span><button class="btn small ghost" id="resetPrints">Reset counter</button></div>
     </section>
 
     <section class="card">

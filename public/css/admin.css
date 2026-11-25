@@ -107,3 +107,6 @@ legend label { margin: 0; }
 .qblock { padding: 10px 0 4px; border-top: 1px solid var(--line); }
 .qblock:first-of-type { border-top: 0; }
 .qblock textarea { width: 100%; }
+.split.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.print-adjust { margin: 12px 0 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.print-adjust label.small { font-size: 12px; }
