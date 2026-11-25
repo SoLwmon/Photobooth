@@ -168,7 +168,7 @@
         <div style="grid-column:1/-1"><label class="toggle"><input type="checkbox" data-path="flow.chooseOnIpad"> Guests pick the final photo on the iPad <span class="muted small">(off = the booth picks the best reaction)</span></label></div>
         <div><label>Time to pick on iPad (s)</label><input type="number" min="10" max="600" step="5" data-path="timing.chooseTimeoutSec"></div>
         <div><label class="toggle"><input type="checkbox" data-path="flow.showWarning"> Show a warning screen before starting</label></div>
-        <div><label>Strip screen timeout (s)</label><input type="number" min="5" max="1800" step="5" data-path="timing.doneTimeoutSec"></div>
+        <div><label>Strip &amp; QR code screen shows for (s)</label><input type="number" min="5" max="1800" step="5" data-path="timing.doneTimeoutSec"></div>
         <div><label>Idle session timeout (s)</label><input type="number" min="30" max="3600" step="10" data-path="timing.inactivityTimeoutSec"></div>
       </div>
     </section>
@@ -315,7 +315,7 @@
 
     <!-- INSTRUCTIONS -->
     <section class="card wide">
-      <h2>Instructions (shown after the language is chosen)</h2>
+      <h2>Instructions (shown on the main display after the first Start)</h2>
       <p class="muted small">One step per line; step 1 in English is shown with step 1 in Chinese under it, and so on. Shown on the main display before guests press the second Start (the iPad points them to the big screen). Don’t mention the scare here.</p>
       <div class="split two">
         <div><label>English</label><textarea rows="6" data-path="instructions.en"></textarea></div>
