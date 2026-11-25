@@ -51,6 +51,7 @@ const BUILTIN_SCARES = [
   { id: 'builtin/pale-lady.svg', name: 'The Pale Lady (built-in, transparent image)', url: '/assets/scares/pale-lady.svg', kind: 'image', builtin: true },
   { id: 'builtin/pale-lady-greenscreen.mp4', name: 'Pale Lady lunge (built-in green-screen MP4 — chroma key test)', url: '/assets/scares/pale-lady-greenscreen.mp4', kind: 'video', builtin: true },
   { id: 'builtin/pale-lady-alpha.webm', name: 'Pale Lady lunge (built-in transparent WebM)', url: '/assets/scares/pale-lady-alpha.webm', kind: 'video', builtin: true },
+  { id: 'builtin/till-death-scare.mp4', name: 'Till Death Do Us Part scare (the booth’s own clip)', url: '/assets/scares/till-death-scare.mp4', kind: 'video', builtin: true },
 ];
 
 function defaultProfile(id) {
@@ -95,8 +96,8 @@ const THEME_PRESETS = {
       ],
     },
     instructions: {
-      en: 'Stand together in front of the screen and look at it.\nFive questions will appear at the top of the screen — answer each one out loud together.\nAfter each question from the second one, a countdown starts: get ready to pose!\nWe take four photos in total. Your photo strip prints for you, and you can download it with the QR code.',
-      zh: '两人一起站在屏幕前，看着大屏幕。\n屏幕上方会出现五个问题，请一起大声回答。\n从第二个问题开始，回答后会有倒数——准备好摆姿势！\n一共拍四张照片。照片条会自动打印，也可以扫描二维码下载。',
+      en: '# Welcome to the Couple’s Photo Booth!\nTo get the best out of your session, follow these quick steps:\n1. You’ll see 5 relationship questions pop up on screen. Answer them out loud to test your chemistry and see who really knows who best!\n2. After each question, look up at the camera above. A 3-2-1 countdown will begin before each snap.\n3. Once your final photo is taken, head outside to the print table to pick up your complimentary photo strip!\n! ANSWER OUT LOUD!\n[ TAP TO START ]',
+      zh: '# 欢迎来到情侣拍照亭！\n为了让你们玩得尽兴，请按照以下简单步骤：\n1. 屏幕上会出现 5 个关于你们感情的问题。请大声回答，测试你们的默契，看看谁才是最懂对方的人！\n2. 每个问题之后，请抬头看上方的相机。每次拍照前都会有 3-2-1 倒数。\n3. 拍完最后一张照片后，请到外面的打印台领取你们的免费照片条！\n! 大声回答！\n[ 点击开始 ]',
     },
   },
   horror: {
@@ -151,33 +152,37 @@ function applyThemePresets(target, fromTheme, toTheme) {
 
 const DEFAULT_SETTINGS = {
   version: 1,
-  camera: { deviceId: '', label: '', resolution: '1080p', mirrorPreview: true, mirrorSaved: false, demoMode: false, fit: 'cover', portraitLayout: 'window', rotation: 0 },
+  camera: { deviceId: '', label: '', resolution: '1080p', mirrorPreview: true, mirrorSaved: false, demoMode: false, fit: 'cover', portraitLayout: 'window', rotation: 90 },
   sound: { volume: 0.85, useVideoAudio: true, sting: 'builtin' },
   theme: { name: 'romance' },
-  questions: { en: THEME_PRESETS.romance.questions.en.slice(), zh: THEME_PRESETS.romance.questions.zh.slice() },
+  // the booth's own questions (saved from the event setup, v12)
+  questions: {
+    en: ["How long have you been together?", "When is your anniversary?", "What was your last argument about?", "Could you forgive your partner if they cheated?", "Will you always love the person standing beside you?"],
+    zh: ["你们在一起多久了？", "你们的纪念日是几月几号？", "你们上一次吵架是因为什么？", "如果你的另一半出轨了，你会原谅他/她吗？", "你会一直爱着站在你身边的这个人吗？"],
+  },
   instructions: { ...THEME_PRESETS.romance.instructions },
   timing: {
     answerSec: 6, countdownSec: 3, // fallbacks; each question has its own time below
-    answerSecs: [8, 6, 6, 6, 6], countdownSecs: [3, 3, 3, 3, 3], // per question (5): time to answer, then countdown (none on question 1)
+    answerSecs: [8, 6, 6, 15, 15], countdownSecs: [3, 3, 3, 3, 3], // per question (5): time to answer, then countdown (none on question 1)
     introTimeoutSec: 90, // instructions screen: back to the start if nobody presses Start
     shotBurstCount: 8, preFlashMs: 250, flashMs: 700, postFlashMs: 300, // photos 1–3: frames before/during/after the screen flash
     scareAtMinSec: 1.2, scareAtMaxSec: 2.6, scareBlackoutMs: 0, // final photo: scare strikes this many seconds into its countdown (random in range)
     scareOnNumber: 2, scareIntoNumberMs: 300, // …or on a countdown number: 2 = while “2” shows (0 = use the random range)
     burstCount: 6, burstDurationSec: 2.5, chooseTimeoutSec: 45,
-    shutterFlash: true, flashColor: 'black', doneTimeoutSec: 25, inactivityTimeoutSec: 180,
+    shutterFlash: true, flashColor: 'black', doneTimeoutSec: 120, inactivityTimeoutSec: 180,
   },
   flow: { chooseOnIpad: false, showWarning: false },
   record: { enabled: true, audio: true, micId: '', micLabel: '', videoKbps: 4000, size: '720p', keepCandidates: true },
   lights: {
-    enabled: false, port: 'auto', ledCount: 60, stripBrightness: 180, roomLevel: 255, flashLevel: 255, relayMode: 'room', relayInvert: false,
+    enabled: true, port: 'auto', ledCount: 60, stripBrightness: 180, roomLevel: 255, flashLevel: 255, relayMode: 'room', relayInvert: true,
     idleColor: '#ff4f8b', sessionColor: '#ffb3c9', scareColor: '#ff0000',
     flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300, scareFlashDelayMs: 1500,
   },
-  wiz: { enabled: false, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
-    idleMode: 'white', idleTemp: 3500, sessionMode: 'white', sessionTemp: 2700, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
+  wiz: { enabled: true, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
+    idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
   print: { enabled: false, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '' },
-  scares: { active: 'builtin/pale-lady-alpha.webm', profiles: {} },
+  scares: { active: 'builtin/till-death-scare.mp4', profiles: { 'builtin/till-death-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.022, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8} } },
   strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, bottomLogo: true, style: 'template', jpegQuality: 0.92 },
   warning: {
     text: 'This booth contains sudden frightening images and loud sounds. It is not recommended for anyone with heart conditions, anxiety, or sensitivity to sudden noise or startling visuals. Photos are stored on this computer only.',
@@ -228,7 +233,7 @@ function sanitizeSettings(s) {
   const m = deepMerge(DEFAULT_SETTINGS, s || {});
   const t = m.timing;
   const out = {
-    version: 13,
+    version: 14,
     theme: { name: m.theme.name === 'horror' ? 'horror' : 'romance' },
     camera: {
       deviceId: str(m.camera.deviceId, 300), label: str(m.camera.label, 300),
@@ -326,7 +331,7 @@ function sanitizeSettings(s) {
       method: m.print.method === 'browser' ? 'browser' : 'direct',
       printerName: str(m.print.printerName, 200),
     },
-    scares: { active: str(m.scares.active, 300, 'builtin/pale-lady-alpha.webm'), profiles: {} },
+    scares: { active: str(m.scares.active, 300, 'builtin/till-death-scare.mp4'), profiles: {} },
     strip: {
       title: str(m.strip.title, 40, 'Till Death Do Us Part'), footer: str(m.strip.footer, 80, ''),
       showDate: bool(m.strip.showDate, true), bottomLogo: bool(m.strip.bottomLogo, true), style: ['template', 'theme', 'romance', 'dark'].includes(m.strip.style) ? m.strip.style : 'template', jpegQuality: clamp(m.strip.jpegQuality, 0.6, 1, 0.92),
@@ -384,6 +389,12 @@ try {
   if (!raw.version || raw.version < 10) {
     // the rose-stained "Till Death Do Us Part" strip design
     raw.strip = raw.strip || {}; raw.strip.style = 'template';
+  }
+  if ((raw.version || 0) < 14 && raw.instructions) {
+    // new instructions text, unless the operator had already written their own
+    const oldEn = /^Stand together in front of the screen and look at it\./, oldZh = /^(两人)?一起站在屏幕前/;
+    if (!raw.instructions.en || oldEn.test(raw.instructions.en)) raw.instructions.en = THEME_PRESETS.romance.instructions.en;
+    if (!raw.instructions.zh || oldZh.test(raw.instructions.zh)) raw.instructions.zh = THEME_PRESETS.romance.instructions.zh;
   }
   if ((raw.version || 0) < 13) {
     // scare: no black screen, and it strikes while the countdown shows “2”

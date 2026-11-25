@@ -191,14 +191,46 @@
     for (const el of $$('[data-th]')) el.innerHTML = currentLang === 'both' ? two(themeText(el.dataset.th, 'en'), themeText(el.dataset.th, 'zh'), true) : themeText(el.dataset.th);
   }
   function getLang() { return currentLang; }
-  /** Instruction steps as <li>s; with both languages, step i shows the English line and the Chinese line under it. */
-  function stepsHtml(ins, lang = currentLang) {
-    if (!ins) return '';
-    const lines = (t) => String(t || '').split('\n').map(l => l.trim()).filter(Boolean);
-    if (lang !== 'both') return lines(ins[lang] || ins.en).map(l => `<li>${esc(l)}</li>`).join('');
-    const en = lines(ins.en), zh = lines(ins.zh), n = Math.max(en.length, zh.length);
-    return Array.from({ length: n }, (_, i) => `<li>${en[i] ? `<span class="l-en">${esc(en[i])}</span>` : ''}${zh[i] ? `<span class="l-zh">${esc(zh[i])}</span>` : ''}</li>`).join('');
+  /**
+   * The instructions screen, from simple text (one item per line):
+   *   # Heading           → big bold heading
+   *   1. Step text        → numbered step
+   *   ! Big line          → big emphasis line
+   *   [ Tap to start ]    → call to action (pulses)
+   *   anything else       → normal sentence
+   * With both languages, line N of the English is shown with line N of the Chinese under it,
+   * so keep the same lines in the same order in both.
+   */
+  function parseInstructionLine(l) {
+    let m;
+    if ((m = l.match(/^#\s*(.+)$/))) return { kind: 'h', text: m[1] };
+    if ((m = l.match(/^(\d+)[.)]\s*(.+)$/))) return { kind: 'step', n: m[1], text: m[2] };
+    if ((m = l.match(/^!\s*(.+)$/))) return { kind: 'big', text: m[1] };
+    if ((m = l.match(/^\[\s*(.+?)\s*\]$/))) return { kind: 'cta', text: m[1] };
+    return { kind: 'p', text: l };
   }
+  function instructionsHtml(ins, lang = currentLang) {
+    if (!ins) return { html: '', hasHeading: false, hasCta: false };
+    const lines = (t) => String(t || '').split('\n').map(l => l.trim()).filter(Boolean).map(parseInstructionLine);
+    const main = lang === 'zh' ? lines(ins.zh) : lines(ins.en), zh = lang === 'both' ? lines(ins.zh) : [];
+    let html = '', inList = false;
+    const plain = !main.some(x => x.kind !== 'p'); // old style: every line is a step
+    main.forEach((x, i) => {
+      const kind = plain ? 'step' : x.kind, z = zh[i];
+      const body = `<span class="l-en">${esc(x.text)}</span>${z ? `<span class="l-zh">${esc(z.text)}</span>` : ''}`;
+      if (kind === 'step' && !inList) { html += '<ol class="steps">'; inList = true; }
+      if (kind !== 'step' && inList) { html += '</ol>'; inList = false; }
+      if (kind === 'step') html += `<li${x.n ? ` value="${esc(x.n)}"` : ''}>${body}</li>`;
+      else if (kind === 'h') html += `<div class="ins-h">${body}</div>`;
+      else if (kind === 'big') html += `<div class="ins-big">${body}</div>`;
+      else if (kind === 'cta') html += `<div class="ins-cta"><span class="ember"></span><span>${body}</span><span class="ember"></span></div>`;
+      else html += `<p class="ins-p">${body}</p>`;
+    });
+    if (inList) html += '</ol>';
+    return { html, hasHeading: main.some(x => x.kind === 'h'), hasCta: main.some(x => x.kind === 'cta') };
+  }
+  function stepsHtml(ins, lang = currentLang) { return instructionsHtml(ins, lang).html; }
+
   /** Apply the theme class, the booth title and themed wording to the page. */
   function applyTheme(settings) {
     const name = (settings && settings.theme && settings.theme.name) || 'romance';
@@ -236,5 +268,5 @@
     document.addEventListener('DOMContentLoaded', () => { if (!currentTheme) { document.body.classList.add('theme-' + t); document.body.classList.toggle('grain', t === 'horror'); } });
   } catch (_) {}
 
-  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles, tr, setLang, getLang, stepsHtml };
+  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles, tr, setLang, getLang, stepsHtml, instructionsHtml };
 })();

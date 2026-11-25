@@ -223,7 +223,10 @@
         $('#attractCta').textContent = SB.tr('pressStart', 'both');
         break;
       case 'intro': {
-        $('#introSteps').innerHTML = SB.stepsHtml(settings && settings.instructions, lang);
+        const ins = SB.instructionsHtml(settings && settings.instructions, lang);
+        $('#introSteps').innerHTML = ins.html;
+        for (const el of $$('#intro .intro-default')) el.hidden = ins.hasHeading; // their own heading replaces the default title
+        $('#introCta').hidden = ins.hasCta;                                     // and their own "tap to start" line replaces ours
         layerOn('intro'); break;
       }
       case 'warning': layerOn('attract'); $('#attractLine').textContent = SB.themeText('warningAttract'); break;
