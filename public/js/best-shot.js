@@ -56,7 +56,7 @@
       const r = d[i], gg = d[i + 1], b = d[i + 2];
       const l = 0.2126 * r + 0.7152 * gg + 0.0722 * b;
       g[j] = l; sum += l;
-      if (Math.max(r, gg, b) > 242) clipped++;
+      if (l > 245 || (r > 250 && gg > 250 && b > 250)) clipped++; // blown-out white
       if (l < 18) dark++;
     }
     // sharpness: variance of the Laplacian
@@ -117,7 +117,7 @@
    * Score candidate frames. `frames` are ImageBitmaps / canvases. `reaction` (optional) is an array of
    * reaction strengths (0..n) for the jump-scare burst. Returns { best, scores, details, faceAnalysis }.
    */
-  async function pick(frames, { reaction = null } = {}) {
+  async function pick(frames, { reaction = null, times = null, idealMs = null } = {}) {
     await load();
     const a = [];
     for (const f of frames) a.push(await analyzeFrame(f, false));
@@ -166,27 +166,38 @@
         while (per.length < maxFaces) per.push(0); // someone we couldn't find doesn't count as scared
         scared = per.reduce((s, v) => s + v, 0) / per.length;
       }
+      // timing: photos 1–3 — closest to the moment the countdown hit zero is best (people are still posing)
+      const timing = times && idealMs != null ? clamp01(1 - Math.max(0, Math.abs(times[i] - idealMs) - 150) / 900) : null;
       let score;
       if (reaction && scared != null) {
-        // the most scared faces win; still a reasonably sharp, well-lit photo with everyone in it
-        score = 0.55 * scared + 0.10 * react + 0.12 * exposure + 0.10 * sharp + 0.13 * facesFound;
+        // the most scared faces win; still a sharp, well-lit photo with everyone in it
+        score = 0.50 * scared + 0.08 * react + 0.14 * exposure + 0.15 * sharp + 0.13 * facesFound;
       } else if (reaction) {
-        score = 0.40 * react + 0.22 * exposure + 0.13 * sharp + (maxFaces ? 0.15 * facesFound + 0.10 * eyes : 0.25 * exposure);
+        score = 0.36 * react + 0.24 * exposure + 0.18 * sharp + (maxFaces ? 0.14 * facesFound + 0.08 * eyes : 0.22 * exposure);
       } else if (maxFaces) {
-        score = 0.30 * eyes + 0.27 * exposure + 0.25 * facesFound + 0.18 * sharp;
+        score = 0.26 * eyes + 0.24 * exposure + 0.20 * facesFound + 0.22 * sharp + (timing != null ? 0.08 * timing : 0.08);
       } else {
-        score = 0.65 * exposure + 0.35 * sharp;
+        score = 0.55 * exposure + 0.35 * sharp + (timing != null ? 0.10 * timing : 0.10);
       }
       const r3 = v => (v == null ? null : Math.round(v * 1000) / 1000);
-      return { score: r3(score), exposure: r3(exposure), eyes: r3(eyes), faces: x.faces.length, sharp: r3(sharp), reaction: r3(react), scared: r3(scared), brightness: r3(mean), clipped: r3(clipped), ears: x.faces.map(f => r3(f.ear)) };
+      return { score: r3(score), timing: r3(timing), exposure: r3(exposure), eyes: r3(eyes), faces: x.faces.length, sharp: r3(sharp), reaction: r3(react), scared: r3(scared), brightness: r3(mean), clipped: r3(clipped), ears: x.faces.map(f => r3(f.ear)) };
     });
+    // Rule out blurry and blown-out photos first, then pick the best score among what's left.
+    // If a rule would leave nothing, it is relaxed (never return nothing).
+    details.forEach((d, i) => { d.faceChecked = !!a[i].faceChecked; });
+    const maxExpo = Math.max(0, ...details.map(d => d.exposure));
+    const rules = [
+      d => d.sharp >= 0.72,                                   // not blurry (vs the sharpest photo in the burst)
+      d => d.clipped < 0.05 && d.exposure >= maxExpo - 0.25, // not over-exposed
+      d => !maxFaces || d.faces >= maxFaces,                  // everyone in the picture
+    ];
+    const ok = (d, i, n) => (!faceReady || !maxFaces || a[i].faceChecked) && rules.slice(0, n).every(r => r(d));
     let best = -1;
-    details.forEach((d, i) => {
-      d.faceChecked = !!a[i].faceChecked;
-      if (faceReady && maxFaces && !a[i].faceChecked) return; // only compare frames whose faces were checked
-      if (best < 0 || d.score > details[best].score) best = i;
-    });
+    for (let n = rules.length; n >= 0 && best < 0; n--) {
+      details.forEach((d, i) => { if (ok(d, i, n) && (best < 0 || d.score > details[best].score)) best = i; });
+    }
     if (best < 0) best = 0;
+    details.forEach((d, i) => { d.passed = rules.map(r => r(d)); });
     return { best, scores: details.map(d => d.score), details, faceAnalysis: faceReady };
   }
 

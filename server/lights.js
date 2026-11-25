@@ -232,26 +232,30 @@ class Lights extends EventEmitter {
     // Pin 10 output: a room light (on normally, off at the scare) or a relay that switches a light
     // on only for the jump scare (e.g. a red neon). Relay boards that switch on with a LOW signal are inverted.
     const scareOnly = L.relayMode === 'scare';
+    // the COB light: 'steady' = always on (a constant photo light, no flashing); 'flash' = pulses for photos/scare
+    const steady = L.flashMode !== 'flash';
     const room = (on) => {
       const v = on ? (scareOnly ? 255 : L.roomLevel) : 0;
       this.send(`ROOM ${L.relayInvert ? 255 - v : v}`);
     };
     switch (name) {
       case 'idle':
-        room(!scareOnly); this.send('FLASH 0');
+        room(!scareOnly); this.send(`FLASH ${steady ? L.flashLevel : 0}`);
         this.send(`BREATHE ${rgb(L.idleColor)} 4000 ${bri}`);
         break;
       case 'session':
-        room(!scareOnly); this.send('FLASH 0');
+        room(!scareOnly); this.send(`FLASH ${steady ? L.flashLevel : 0}`);
         this.send(`STRIP ${rgb(L.sessionColor)} ${bri}`);
         break;
       case 'flash':
+        if (steady) break; // the light is on all the time: nothing to fire
         this.send(`PULSE ${Math.max(50, Math.min(5000, opts.ms || 700))} ${L.flashLevel}`);
         break;
       case 'scare':
         // jump scare: room light off, LED strip red, flash device on for the reaction burst
         room(scareOnly);
         this.send(`STRIP ${rgb(L.scareColor)} 255`);
+        if (steady) { this.send(`FLASH ${L.flashLevel}`); break; } // stays on through the scare
         {
           // the flash can wait (e.g. 1.5 s, for the scream in the scare clip); it still ends when the burst ends
           const total = Math.max(200, Math.min(10000, opts.ms || 3000)), wait = L.scareFlashDelayMs || 0;

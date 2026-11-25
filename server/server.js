@@ -176,7 +176,7 @@ const DEFAULT_SETTINGS = {
   lights: {
     enabled: true, port: 'auto', ledCount: 60, stripBrightness: 180, roomLevel: 255, flashLevel: 255, relayMode: 'room', relayInvert: true,
     idleColor: '#ff4f8b', sessionColor: '#ffb3c9', scareColor: '#ff0000',
-    flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300, scareFlashDelayMs: 1500,
+    flashMode: 'steady', flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300, scareFlashDelayMs: 1500,
   },
   wiz: { enabled: true, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
     idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
@@ -234,7 +234,7 @@ function sanitizeSettings(s) {
   const m = deepMerge(DEFAULT_SETTINGS, s || {});
   const t = m.timing;
   const out = {
-    version: 15,
+    version: 16,
     theme: { name: m.theme.name === 'horror' ? 'horror' : 'romance' },
     camera: {
       deviceId: str(m.camera.deviceId, 300), label: str(m.camera.label, 300),
@@ -301,7 +301,7 @@ function sanitizeSettings(s) {
         roomLevel: Math.round(clamp(L.roomLevel, 0, 255, 255)), flashLevel: Math.round(clamp(L.flashLevel, 0, 255, 255)),
         relayMode: L.relayMode === 'scare' ? 'scare' : 'room', relayInvert: bool(L.relayInvert, false),
         idleColor: col(L.idleColor, '#ff4f8b'), sessionColor: col(L.sessionColor, '#ffb3c9'), scareColor: col(L.scareColor, '#ff0000'),
-        flashOnPhotos: bool(L.flashOnPhotos, false), scareFlashExtraMs: Math.round(clamp(L.scareFlashExtraMs, 0, 5000, 400)), scareFlashDelayMs: Math.round(clamp(L.scareFlashDelayMs, 0, 5000, 1500)),
+        flashMode: L.flashMode === 'flash' ? 'flash' : 'steady', flashOnPhotos: bool(L.flashOnPhotos, false), scareFlashExtraMs: Math.round(clamp(L.scareFlashExtraMs, 0, 5000, 400)), scareFlashDelayMs: Math.round(clamp(L.scareFlashDelayMs, 0, 5000, 1500)),
         revertDelayMs: Math.round(clamp(L.revertDelayMs, 0, 10000, 300)),
       };
     })(),
@@ -393,6 +393,10 @@ try {
   if (!raw.version || raw.version < 10) {
     // the rose-stained "Till Death Do Us Part" strip design
     raw.strip = raw.strip || {}; raw.strip.style = 'template';
+  }
+  if ((raw.version || 0) < 16) {
+    // the COB light is now a steady light (always on), not a flash
+    raw.lights = raw.lights || {}; raw.lights.flashMode = 'steady';
   }
   if ((raw.version || 0) < 15) {
     // scare photos: 10 over 3 s, starting 0.3 s after the scare appears, so they catch the reaction

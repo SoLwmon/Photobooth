@@ -331,7 +331,7 @@ Back up or empty the `data` folder between events. You can browse and download e
 
 ## 13. How it's built
 
-- `public/js/best-shot.js` picks the best photo of each burst; for the jump scare it picks the **most scared faces** (surprised/fearful expression, mouth open, eyes wide), using face models bundled in `public/vendor/face-api/model` (works offline).
+- `public/js/best-shot.js` picks the best photo of each burst: it first rules out blurry photos, blown-out (over-exposed) photos and photos missing someone, prefers the moment the countdown hit zero for photos 1–3, and then the best eyes/exposure/sharpness; for the jump scare it picks the **most scared faces** (surprised/fearful expression, mouth open, eyes wide), using face models bundled in `public/vendor/face-api/model` (works offline).
 - `server/wiz.js` talks to WiZ bulbs over the local network (UDP port 38899).
 - `server/lights.js` talks to the lights box over USB (via `scripts/serial-bridge.ps1`), with a built-in simulator. `hardware/` holds the box's code and build guide.
 - `public/js/best-shot.js` scores each burst (eyes open, exposure, sharpness, faces, reaction) using the bundled offline face models in `public/vendor/face-api/`.

@@ -627,7 +627,8 @@
         report({ type: 'shotDone', cmdId: cmd.cmdId, shot: cmd.shot });
         const shot = cmd.shot, sid = cmd.sessionId;
         queueWork(async () => {
-          const pick = await SBBest.pick(frames.map(f => f.bmp));
+          // best moment: right when the countdown reached zero (the shutter), before people relax
+          const pick = await SBBest.pick(frames.map(f => f.bmp), { times: frames.map(f => f.offset), idealMs: pre });
           const order = [pick.best, ...frames.map((_, i) => i).filter(i => i !== pick.best)];
           for (const i of order) {
             const { full, thumb } = await encode(frames[i].bmp, i === pick.best ? 0.92 : 0.85, i === pick.best);
