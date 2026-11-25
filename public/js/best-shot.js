@@ -4,7 +4,7 @@
 //   - faces well exposed (not blown out by the flash, not too dark)
 //   - sharp (no motion blur)
 //   - everyone's faces found
-//   - for the jump-scare photo: also the biggest reaction
+//   - for the jump-scare photo: the most scared faces (surprised/fearful expression, mouth open, eyes wide)
 // Runs fully offline in the browser (face-api + bundled models). If the face models can't load,
 // it still scores exposure and sharpness.
 (function () {
@@ -13,7 +13,7 @@
   const MODEL_URL = '/vendor/face-api/model';
   const AW = 512; // analysis width
   const FACE_TOP_K = 4; // run the (slower) face check on this many of the best-looking frames
-  let loadPromise = null, faceReady = false, loadError = null;
+  let loadPromise = null, faceReady = false, loadError = null, exprReady = false;
 
   function load() {
     if (loadPromise) return loadPromise;
@@ -25,6 +25,8 @@
       await fa.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
       await fa.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
       faceReady = true;
+      // facial expressions (surprised / fearful) for picking the most scared jump-scare photo; optional
+      try { await fa.nets.faceExpressionNet.loadFromUri(MODEL_URL); exprReady = true; } catch (e) { console.warn('Expression model unavailable:', e); }
     })().catch(e => { loadError = e; faceReady = false; console.warn('Face analysis unavailable:', e); });
     return loadPromise;
   }
@@ -37,6 +39,12 @@
     return h ? (dist(pts[1], pts[5]) + dist(pts[2], pts[4])) / (2 * h) : null;
   }
   const clamp01 = v => Math.max(0, Math.min(1, v));
+  /** Mouth opening: inner-lip gap ÷ mouth width (closed ≈ 0, a scream ≈ 0.4+). */
+  function mouthOpen(m) {
+    if (!m || m.length < 20) return null;
+    const w = dist(m[12], m[16]);
+    return w ? (dist(m[13], m[19]) + dist(m[14], m[18]) + dist(m[15], m[17])) / (3 * w) : null;
+  }
 
   function grayAndStats(ctx, x, y, w, h) {
     x = Math.max(0, Math.floor(x)); y = Math.max(0, Math.floor(y));
@@ -79,19 +87,27 @@
     return out;
   }
 
-  async function addFaces(out) {
+  async function addFaces(out, withExpr = false) {
     const ctx = out.ctx, c = ctx.canvas;
     out.faceChecked = true;
     {
       try {
         const fa = window.faceapi;
-        const res = await fa.detectAllFaces(c, new fa.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.45 })).withFaceLandmarks();
+        let q = fa.detectAllFaces(c, new fa.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.45 })).withFaceLandmarks();
+        if (withExpr && exprReady) q = q.withFaceExpressions();
+        const res = await q;
         for (const r of res) {
           const b = r.detection.box;
           const lm = r.landmarks;
           const e1 = ear(lm.getLeftEye()), e2 = ear(lm.getRightEye());
           const stats = grayAndStats(ctx, b.x, b.y, b.width, b.height);
-          out.faces.push({ box: { x: b.x, y: b.y, w: b.width, h: b.height }, score: r.detection.score, ear: e1 != null && e2 != null ? Math.min(e1, e2) : (e1 ?? e2), stats });
+          const ex = r.expressions || null;
+          out.faces.push({
+            box: { x: b.x, y: b.y, w: b.width, h: b.height }, score: r.detection.score, ear: e1 != null && e2 != null ? Math.min(e1, e2) : (e1 ?? e2), stats,
+            eyesWide: e1 != null && e2 != null ? (e1 + e2) / 2 : (e1 ?? e2),
+            mouth: mouthOpen(lm.getMouth()),
+            scared: ex ? (ex.surprised || 0) + (ex.fearful || 0) + 0.5 * (ex.disgusted || 0) : null,
+          });
         }
       } catch (e) { console.warn('face detect failed', e); }
     }
@@ -112,8 +128,10 @@
         const w = x.whole, ex = clamp01(1 - (w.mean < 0.25 ? (0.25 - w.mean) * 2.5 : w.mean > 0.7 ? (w.mean - 0.7) * 3 : 0) - w.clipped * 6 - w.dark * 2);
         return 0.6 * ex + 0.4 * (w.sharp / maxS) + (reaction ? 0.8 * ((reaction[i] || 0) / Math.max(1e-6, ...reaction)) : 0);
       });
-      const top = pre.map((v, i) => [v, i]).sort((p, q) => q[0] - p[0]).slice(0, FACE_TOP_K).map(p => p[1]);
-      for (const i of top) await addFaces(a[i]);
+      // the scare burst: check every frame (up to 16), since the biggest scare face can be in any of them
+      const k = reaction ? Math.min(16, a.length) : FACE_TOP_K;
+      const top = pre.map((v, i) => [v, i]).sort((p, q) => q[0] - p[0]).slice(0, k).map(p => p[1]);
+      for (const i of top) await addFaces(a[i], !!reaction);
     }
     const maxFaces = Math.max(0, ...a.map(x => x.faces.length));
     const sharpVals = a.map(x => x.faces.length ? x.faces.reduce((s, f) => s + f.stats.sharp, 0) / x.faces.length : x.whole.sharp);
@@ -136,8 +154,23 @@
       const facesFound = maxFaces ? x.faces.length / maxFaces : null;
       const sharp = sharpVals[i] / maxSharp;
       const react = reaction ? clamp01((reaction[i] || 0) / maxReact) : null;
+      // how scared everyone looks: surprised/fearful expression, mouth wide open, eyes wide
+      let scared = null;
+      if (reaction && maxFaces) { // frames where nobody was found score 0 here
+        const per = x.faces.map(f => {
+          const expr = f.scared == null ? null : clamp01(f.scared);
+          const mouth = f.mouth == null ? 0 : clamp01((f.mouth - 0.05) / 0.35);
+          const wide = f.eyesWide == null ? 0 : clamp01((f.eyesWide - 0.24) / 0.14);
+          return expr == null ? 0.65 * mouth + 0.35 * wide : 0.55 * expr + 0.30 * mouth + 0.15 * wide;
+        });
+        while (per.length < maxFaces) per.push(0); // someone we couldn't find doesn't count as scared
+        scared = per.reduce((s, v) => s + v, 0) / per.length;
+      }
       let score;
-      if (reaction) {
+      if (reaction && scared != null) {
+        // the most scared faces win; still a reasonably sharp, well-lit photo with everyone in it
+        score = 0.55 * scared + 0.10 * react + 0.12 * exposure + 0.10 * sharp + 0.13 * facesFound;
+      } else if (reaction) {
         score = 0.40 * react + 0.22 * exposure + 0.13 * sharp + (maxFaces ? 0.15 * facesFound + 0.10 * eyes : 0.25 * exposure);
       } else if (maxFaces) {
         score = 0.30 * eyes + 0.27 * exposure + 0.25 * facesFound + 0.18 * sharp;
@@ -145,7 +178,7 @@
         score = 0.65 * exposure + 0.35 * sharp;
       }
       const r3 = v => (v == null ? null : Math.round(v * 1000) / 1000);
-      return { score: r3(score), exposure: r3(exposure), eyes: r3(eyes), faces: x.faces.length, sharp: r3(sharp), reaction: r3(react), brightness: r3(mean), clipped: r3(clipped), ears: x.faces.map(f => r3(f.ear)) };
+      return { score: r3(score), exposure: r3(exposure), eyes: r3(eyes), faces: x.faces.length, sharp: r3(sharp), reaction: r3(react), scared: r3(scared), brightness: r3(mean), clipped: r3(clipped), ears: x.faces.map(f => r3(f.ear)) };
     });
     let best = -1;
     details.forEach((d, i) => {
