@@ -103,6 +103,12 @@ class Lights extends EventEmitter {
     const changed = !prev || !prev.lights.enabled || prev.lights.port !== L.port;
     if (changed) this.connect();
     else if (prev.lights.ledCount !== L.ledCount && this.status.connected) this.send(`LEDS ${L.ledCount}`);
+    // steady COB light: a brightness / mode change shows straight away (not only at the next session)
+    if (!changed && this.status.connected && (prev.lights.flashLevel !== L.flashLevel || prev.lights.flashMode !== L.flashMode)) {
+      const cue = this.look && this.look.cue;
+      if (L.flashMode !== 'flash' && cue !== 'off') this.send(`FLASH ${L.flashLevel}`);
+      else if (L.flashMode === 'flash' && cue !== 'scare') this.send('FLASH 0');
+    }
   }
 
   disconnect() {

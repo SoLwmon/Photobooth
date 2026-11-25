@@ -222,7 +222,7 @@
             <div><label>Pin 10 output (relay)</label><select data-path="lights.relayMode"><option value="room">Room light — on normally, off at the scare</option><option value="scare">Scare light — on only at the jump scare (e.g. red neon)</option></select></div>
             <div><label class="toggle" style="margin-top:26px"><input type="checkbox" data-path="lights.relayInvert"> Relay switches on with LOW (flip if it’s on when it should be off)</label></div>
             <div><label>Room light level <output data-for-path="lights.roomLevel"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.roomLevel"></div>
-            <div><label>Flash brightness <output data-for-path="lights.flashLevel"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.flashLevel"></div>
+            <div><label>White COB light brightness <output data-for-path="lights.flashLevel"></output> <span class="muted small">(0–255)</span></label><input type="range" min="0" max="255" step="1" data-path="lights.flashLevel"></div>
             <div><label>Scare flash starts after (ms)</label><input type="number" min="0" max="5000" step="100" data-path="lights.scareFlashDelayMs"></div>
             <div><label>Flash stays on after the burst (ms)</label><input type="number" min="0" max="5000" step="50" data-path="lights.scareFlashExtraMs"></div>
             <div><label>Back to normal after (ms)</label><input type="number" min="0" max="10000" step="100" data-path="lights.revertDelayMs"></div>
