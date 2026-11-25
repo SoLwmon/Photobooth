@@ -158,9 +158,11 @@
         <div><label>Start taking photos before flash (ms)</label><input type="number" min="0" max="2000" step="50" data-path="timing.preFlashMs"></div>
         <div><label>Keep taking photos after flash (ms)</label><input type="number" min="0" max="2000" step="50" data-path="timing.postFlashMs"></div>
         <div class="muted small" style="grid-column:1/-1">The booth keeps the best photo of each burst: eyes open, faces well lit (not blown out by the flash), sharp, and everyone in the picture.</div>
+        <div><label>Scare strikes on countdown number (0 = random, use the range below)</label><input type="number" min="0" max="10" step="1" data-path="timing.scareOnNumber"></div>
+        <div><label>…this long after that number appears (ms)</label><input type="number" min="0" max="999" step="50" data-path="timing.scareIntoNumberMs"></div>
         <div><label>Scare strikes — earliest (s into final countdown)</label><input type="number" min="0" max="20" step="0.1" data-path="timing.scareAtMinSec"></div>
         <div><label>Scare strikes — latest (s into final countdown)</label><input type="number" min="0" max="20" step="0.1" data-path="timing.scareAtMaxSec"></div>
-        <div><label>Black flash before the scare (ms, 0 = off)</label><input type="number" min="0" max="1500" step="10" data-path="timing.scareBlackoutMs"></div>
+        <div><label>Black flash before the scare (ms, 0 = off — the scare cuts straight in)</label><input type="number" min="0" max="1500" step="10" data-path="timing.scareBlackoutMs"></div>
         <div><label>Jump-scare reaction photos</label><input type="number" min="2" max="40" step="1" data-path="timing.burstCount"></div>
         <div><label>Reaction burst length (s)</label><input type="number" min="0.5" max="10" step="0.1" data-path="timing.burstDurationSec"></div>
         <div style="grid-column:1/-1"><label class="toggle"><input type="checkbox" data-path="flow.chooseOnIpad"> Guests pick the final photo on the iPad <span class="muted small">(off = the booth picks the best reaction)</span></label></div>

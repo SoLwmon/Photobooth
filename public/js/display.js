@@ -596,7 +596,11 @@
       if (cmd.final) {
         // finish the background best-photo check for photo 3 first, so the scare has the PC to itself
         await Promise.race([pendingWork, sleep(8000)]); check(token);
-        scareAtMs = (t.scareAtMinSec + Math.random() * (t.scareAtMaxSec - t.scareAtMinSec)) * 1000;
+        // on a countdown number (e.g. while “2” shows), or at a random moment in the range
+        const onNum = t.scareOnNumber || 0;
+        scareAtMs = onNum > 0 && onNum <= countdownSec
+          ? (countdownSec - onNum) * 1000 + (t.scareIntoNumberMs ?? 300)
+          : (t.scareAtMinSec + Math.random() * (t.scareAtMaxSec - t.scareAtMinSec)) * 1000;
         const strikeAt = performance.now() + scareAtMs;
         const interrupted = await countdown(countdownSec, token, strikeAt);
         if (!interrupted) {
@@ -636,11 +640,12 @@
 
       // ---- final photo: the scare cuts into the countdown; room light off, LED strip red, flash device on
       check(token);
-      snapClear();
       const t0 = performance.now();
       const L = settings.lights || {};
-      // The screen cuts to black for a moment, then the scare is there when it comes back.
-      const blackMs = t.scareBlackoutMs ?? 200, fl = $('#flash');
+      // The screen cuts to black for a moment, then the scare is there when it comes back (0 = no black:
+      // the countdown number stays up until the scare's first frame is ready underneath it, then it's gone).
+      const blackMs = t.scareBlackoutMs ?? 0, fl = $('#flash');
+      if (blackMs > 0) snapClear();
       if (blackMs > 0) { fl.classList.remove('go', 'shutter'); fl.classList.add('black', 'cut', 'hold'); }
       lightCue('scare', { ms: Math.round(blackMs + t.burstDurationSec * 1000 + (L.scareFlashExtraMs ?? 400)) });
       // the scare starts loading at the same moment the screen goes black, so the black only lasts `blackMs`
@@ -650,6 +655,10 @@
       if (blackMs > 0) {
         fl.classList.remove('hold'); setTimeout(() => fl.classList.remove('cut'), 150);
         renderer._showStart = performance.now(); // entrance animation (lunge…) starts as the black lifts
+        await new Promise(r => requestAnimationFrame(r));
+      } else {
+        snapClear(); // the countdown vanishes in the same frame the scare is there
+        renderer._showStart = performance.now();
         await new Promise(r => requestAnimationFrame(r));
       }
       const visibleAt = performance.now();

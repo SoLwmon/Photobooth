@@ -161,7 +161,8 @@ const DEFAULT_SETTINGS = {
     answerSecs: [8, 6, 6, 6, 6], countdownSecs: [3, 3, 3, 3, 3], // per question (5): time to answer, then countdown (none on question 1)
     introTimeoutSec: 90, // instructions screen: back to the start if nobody presses Start
     shotBurstCount: 8, preFlashMs: 250, flashMs: 700, postFlashMs: 300, // photos 1–3: frames before/during/after the screen flash
-    scareAtMinSec: 1.2, scareAtMaxSec: 2.6, scareBlackoutMs: 200, // final photo: scare strikes this many seconds into its countdown (random in range)
+    scareAtMinSec: 1.2, scareAtMaxSec: 2.6, scareBlackoutMs: 0, // final photo: scare strikes this many seconds into its countdown (random in range)
+    scareOnNumber: 2, scareIntoNumberMs: 300, // …or on a countdown number: 2 = while “2” shows (0 = use the random range)
     burstCount: 6, burstDurationSec: 2.5, chooseTimeoutSec: 45,
     shutterFlash: true, flashColor: 'black', doneTimeoutSec: 25, inactivityTimeoutSec: 180,
   },
@@ -227,7 +228,7 @@ function sanitizeSettings(s) {
   const m = deepMerge(DEFAULT_SETTINGS, s || {});
   const t = m.timing;
   const out = {
-    version: 12,
+    version: 13,
     theme: { name: m.theme.name === 'horror' ? 'horror' : 'romance' },
     camera: {
       deviceId: str(m.camera.deviceId, 300), label: str(m.camera.label, 300),
@@ -269,7 +270,8 @@ function sanitizeSettings(s) {
       introTimeoutSec: Math.round(clamp(t.introTimeoutSec, 15, 600, 90)),
       scareAtMinSec: clamp(t.scareAtMinSec, 0, 20, 1.2),
       scareAtMaxSec: clamp(t.scareAtMaxSec, 0, 20, 2.6),
-      scareBlackoutMs: clamp(t.scareBlackoutMs, 0, 1500, 200),
+      scareBlackoutMs: clamp(t.scareBlackoutMs, 0, 1500, 0),
+      scareOnNumber: Math.round(clamp(t.scareOnNumber, 0, 10, 2)), scareIntoNumberMs: Math.round(clamp(t.scareIntoNumberMs, 0, 999, 300)),
       burstCount: Math.round(clamp(t.burstCount, 2, 40, 6)),
       chooseTimeoutSec: Math.round(clamp(t.chooseTimeoutSec, 10, 600, 45)),
       burstDurationSec: clamp(t.burstDurationSec, 0.5, 10, 2.5),
@@ -382,6 +384,10 @@ try {
   if (!raw.version || raw.version < 10) {
     // the rose-stained "Till Death Do Us Part" strip design
     raw.strip = raw.strip || {}; raw.strip.style = 'template';
+  }
+  if ((raw.version || 0) < 13) {
+    // scare: no black screen, and it strikes while the countdown shows “2”
+    raw.timing = raw.timing || {}; raw.timing.scareBlackoutMs = 0; raw.timing.scareOnNumber = 2;
   }
   if (raw.version === 11 || (raw.version || 0) < 12) {
     // idle: light warm white
