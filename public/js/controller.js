@@ -151,6 +151,8 @@
     txt.textContent = msg;
     for (const b of $$('.lang-btn')) b.disabled = !ok || pending;
     if ($('#startBtn')) $('#startBtn').disabled = !ok || pending;
+    // tell guests why Start is greyed out (the iPad lost its connection to the booth)
+    $('#introNote').textContent = ok ? '' : tr(!connected ? 'reconnecting' : !state || !state.displayOnline ? 'displayOffline' : 'cameraNotReady', 'both');
     const note = $('#idleNote');
     note.textContent = !ok ? tr('gettingReady', 'both') : (note.dataset.msg || '');
   }

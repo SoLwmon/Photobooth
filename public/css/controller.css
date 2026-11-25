@@ -119,3 +119,4 @@ body.lang-both .intro-card .row { margin-top: 1.4vh; }
 body.lang-both .intro-card .btn.huge { padding: 18px 56px; min-height: 0; }
 .intro-card .eye { margin: 18px auto 6px; }
 .intro-card .look { margin: 8px 0 4px; }
+.offline-note { color: #c8284f; font-weight: 600; min-height: 1.4em; margin-top: 1.2vh; }
