@@ -94,3 +94,8 @@ button { font-family: inherit; }
 .btn .l-zh { font-size: 0.7em; margin-top: 0.1em; letter-spacing: 0.1em; }
 .eyebrow .l-zh { letter-spacing: 0.2em; }
 .steps li .l-zh { opacity: 0.85; font-size: 0.9em; margin-top: 0.2em; }
+
+/* QR card: the code is always centred in its box, whatever the caption width */
+.qr { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.qr-img { margin-left: auto; margin-right: auto; flex: none; }
+.qr-cap { text-align: center; max-width: 100%; }

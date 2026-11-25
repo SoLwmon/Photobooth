@@ -151,3 +151,6 @@ body:not(.portrait) #intro .ins-p { font-size: clamp(16px, 1.45vw, 30px); margin
 body:not(.portrait) #intro .steps li { font-size: clamp(15px, 1.35vw, 28px); padding: 0.7vh 0 0.7vh 2.3em; line-height: 1.35; }
 body:not(.portrait) #intro .ins-big { font-size: clamp(28px, 3vw, 60px); margin: 1.4vh 0 0.6vh; }
 body:not(.portrait) #intro .ins-cta { font-size: clamp(14px, 1.2vw, 24px); }
+
+/* instructions sit at the TOP of the screen */
+#intro, body.portrait #intro { align-items: flex-start; padding-top: 3vh; }

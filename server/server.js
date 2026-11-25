@@ -168,10 +168,10 @@ const DEFAULT_SETTINGS = {
     shotBurstCount: 8, preFlashMs: 250, flashMs: 700, postFlashMs: 300, // photos 1–3: frames before/during/after the screen flash
     scareAtMinSec: 1.2, scareAtMaxSec: 2.6, scareBlackoutMs: 0, // final photo: scare strikes this many seconds into its countdown (random in range)
     scareOnNumber: 2, scareIntoNumberMs: 300, // …or on a countdown number: 2 = while “2” shows (0 = use the random range)
-    burstCount: 6, burstDurationSec: 2.5, chooseTimeoutSec: 45,
+    burstCount: 10, burstDurationSec: 3, burstStartMs: 300, chooseTimeoutSec: 45, // scare photos: start 0.3 s after the scare appears (reactions take a moment)
     shutterFlash: true, flashColor: 'black', doneTimeoutSec: 120, inactivityTimeoutSec: 180,
   },
-  flow: { chooseOnIpad: false, showWarning: false },
+  flow: { chooseOnIpad: false, showWarning: false, linkFirstTwo: true }, // linkFirstTwo: questions 1 and 2 are Part 1 and Part 2 of one question
   record: { enabled: true, audio: true, micId: '', micLabel: '', videoKbps: 4000, size: '720p', keepCandidates: true },
   lights: {
     enabled: true, port: 'auto', ledCount: 60, stripBrightness: 180, roomLevel: 255, flashLevel: 255, relayMode: 'room', relayInvert: true,
@@ -233,7 +233,7 @@ function sanitizeSettings(s) {
   const m = deepMerge(DEFAULT_SETTINGS, s || {});
   const t = m.timing;
   const out = {
-    version: 14,
+    version: 15,
     theme: { name: m.theme.name === 'horror' ? 'horror' : 'romance' },
     camera: {
       deviceId: str(m.camera.deviceId, 300), label: str(m.camera.label, 300),
@@ -279,13 +279,14 @@ function sanitizeSettings(s) {
       scareOnNumber: Math.round(clamp(t.scareOnNumber, 0, 10, 2)), scareIntoNumberMs: Math.round(clamp(t.scareIntoNumberMs, 0, 999, 300)),
       burstCount: Math.round(clamp(t.burstCount, 2, 40, 6)),
       chooseTimeoutSec: Math.round(clamp(t.chooseTimeoutSec, 10, 600, 45)),
-      burstDurationSec: clamp(t.burstDurationSec, 0.5, 10, 2.5),
+      burstDurationSec: clamp(t.burstDurationSec, 0.5, 10, 3),
+      burstStartMs: Math.round(clamp(t.burstStartMs, 0, 3000, 300)),
       shutterFlash: bool(t.shutterFlash, true),
       flashColor: t.flashColor === 'white' ? 'white' : 'black',
       doneTimeoutSec: Math.round(clamp(t.doneTimeoutSec, 5, 1800, 25)),
       inactivityTimeoutSec: Math.round(clamp(t.inactivityTimeoutSec, 30, 3600, 180)),
     },
-    flow: { chooseOnIpad: bool(m.flow.chooseOnIpad, false), showWarning: bool(m.flow.showWarning, false) },
+    flow: { chooseOnIpad: bool(m.flow.chooseOnIpad, false), showWarning: bool(m.flow.showWarning, false), linkFirstTwo: bool(m.flow.linkFirstTwo, true) },
     record: {
       enabled: bool(m.record.enabled, true), audio: bool(m.record.audio, true),
       micId: str(m.record.micId, 300), micLabel: str(m.record.micLabel, 300),
@@ -389,6 +390,13 @@ try {
   if (!raw.version || raw.version < 10) {
     // the rose-stained "Till Death Do Us Part" strip design
     raw.strip = raw.strip || {}; raw.strip.style = 'template';
+  }
+  if ((raw.version || 0) < 15) {
+    // scare photos: 10 over 3 s, starting 0.3 s after the scare appears, so they catch the reaction
+    raw.timing = raw.timing || {};
+    if (!raw.timing.burstCount || raw.timing.burstCount <= 6) raw.timing.burstCount = 10;
+    if (!raw.timing.burstDurationSec || raw.timing.burstDurationSec <= 2.5) raw.timing.burstDurationSec = 3;
+    raw.timing.burstStartMs = 300;
   }
   if ((raw.version || 0) < 14 && raw.instructions) {
     // new instructions text, unless the operator had already written their own

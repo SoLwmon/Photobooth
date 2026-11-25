@@ -199,7 +199,7 @@
   // ------------------------------------------------------------------ UI per phase
   function layerOn(...ids) { for (const el of $$('.layer')) el.classList.toggle('on', ids.includes(el.id)); }
   function showQuestion(question, total, prompt, promptZh) {
-    $('#shotNo').textContent = SB.tr('question', undefined, { n: question, total: total || 5 });
+    $('#shotNo').textContent = SB.questionLabel(question, total || 5, !!(settings && settings.flow && settings.flow.linkFirstTwo));
     // English question, with the Chinese underneath
     $('#promptText').textContent = prompt || '';
     $('#promptZh').textContent = promptZh || ''; $('#promptZh').hidden = !promptZh;
@@ -651,7 +651,7 @@
       const blackMs = t.scareBlackoutMs ?? 0, fl = $('#flash');
       if (blackMs > 0) snapClear();
       if (blackMs > 0) { fl.classList.remove('go', 'shutter'); fl.classList.add('black', 'cut', 'hold'); }
-      lightCue('scare', { ms: Math.round(blackMs + t.burstDurationSec * 1000 + (L.scareFlashExtraMs ?? 400)) });
+      lightCue('scare', { ms: Math.round(blackMs + (t.burstStartMs ?? 300) + t.burstDurationSec * 1000 + (L.scareFlashExtraMs ?? 400)) });
       // the scare starts loading at the same moment the screen goes black, so the black only lasts `blackMs`
       const shown = renderer.show();
       if (blackMs > 0) await sleep(blackMs);
@@ -670,7 +670,8 @@
       if (demo) demo.scare();
       // Only grab raw frames while the scare plays (turning them upright waits until it's over), so nothing
       // competes with the scare video for the graphics card.
-      const frames = await captureBurst(t.burstCount, t.burstDurationSec * 1000, visibleAt, token, true);
+      // the photos start a moment after the scare appears (people need ~0.3 s to react) and run through the scare
+      const frames = await captureBurst(t.burstCount, t.burstDurationSec * 1000, visibleAt + (t.burstStartMs ?? 300), token, true);
       // the last picture is taken: stop the session video, put the lights back to normal
       stopRecording();
       setTimeout(() => lightCue('session'), L.revertDelayMs ?? 300);

@@ -165,6 +165,7 @@
         <div><label>Black flash before the scare (ms, 0 = off — the scare cuts straight in)</label><input type="number" min="0" max="1500" step="10" data-path="timing.scareBlackoutMs"></div>
         <div><label>Jump-scare reaction photos</label><input type="number" min="2" max="40" step="1" data-path="timing.burstCount"></div>
         <div><label>Reaction burst length (s)</label><input type="number" min="0.5" max="10" step="0.1" data-path="timing.burstDurationSec"></div>
+        <div><label>Reaction photos start after the scare appears (ms)</label><input type="number" min="0" max="3000" step="50" data-path="timing.burstStartMs"></div>
         <div style="grid-column:1/-1"><label class="toggle"><input type="checkbox" data-path="flow.chooseOnIpad"> Guests pick the final photo on the iPad <span class="muted small">(off = the booth picks the best reaction)</span></label></div>
         <div><label>Time to pick on iPad (s)</label><input type="number" min="10" max="600" step="5" data-path="timing.chooseTimeoutSec"></div>
         <div><label class="toggle"><input type="checkbox" data-path="flow.showWarning"> Show a warning screen before starting</label></div>
@@ -271,6 +272,7 @@
     <section class="card wide">
       <h2>Questions on the main display</h2>
       <p class="muted small">Every question is shown in English with the Chinese underneath (the same for the instructions and every guest screen). Question 1 is a warm-up with no photo; questions 2–5 each end with a countdown and a photo.</p>
+      <label class="toggle hl"><input type="checkbox" data-path="flow.linkFirstTwo"> Questions 1 and 2 are two parts of one question (shown as “Question 1 · Part 1” and “Part 2”; the rest become Questions 2–4)</label>
       <div class="qblock">
         <label>Question 1 — warm-up, no photo</label>
         <div class="split two">

@@ -135,7 +135,7 @@
       pressStart: 'Press Start on the iPad to begin', pickLang: 'Choose your language on the iPad to begin',
       howItWorks: 'How it works', start: 'Start', back: 'Back', readBigScreen: 'Read how it works on the big screen',
       readyWhenYouAre: 'Press Start when you’re ready', introDisplayCta: 'Press Start on the iPad when you’re ready',
-      question: 'Question {n} of {total}', answerNow: 'Answer now…', strikePose: 'Now strike a pose!',
+      question: 'Question {n} of {total}', answerNow: 'Answer now…', questionPart: 'Question {n} · Part {p}', strikePose: 'Now strike a pose!',
       lookBig: 'Look at the big screen', lookBigSub: 'Your questions and countdowns are up there.',
       developingIpad: 'Developing your strip…', stripReady: 'Your strip is ready',
       howManyPrints: 'How many prints would you like?', eachPrint2: 'Each print is 2 photo strips', noPrints: 'No prints',
@@ -159,7 +159,7 @@
       pressStart: '请在 iPad 上按“开始”', pickLang: '请在 iPad 上选择语言开始',
       howItWorks: '玩法说明', start: '开始', back: '返回', readBigScreen: '请看大屏幕上的玩法说明',
       readyWhenYouAre: '准备好了就按“开始”', introDisplayCta: '准备好了，请在 iPad 上按“开始”',
-      question: '第 {n} 题 / 共 {total} 题', answerNow: '请回答……', strikePose: '摆个姿势吧！',
+      question: '第 {n} 题 / 共 {total} 题', answerNow: '请回答……', questionPart: '第 {n} 题 · 第{p}部分', strikePose: '摆个姿势吧！',
       lookBig: '请看大屏幕', lookBigSub: '问题和倒数都会出现在大屏幕上。',
       developingIpad: '正在冲洗你们的照片条……', stripReady: '你们的照片条完成了',
       howManyPrints: '要打印几张？', eachPrint2: '每张打印出来是两条照片条', noPrints: '不打印',
@@ -199,6 +199,13 @@
     for (const el of $$('[data-th]')) el.innerHTML = currentLang === 'both' ? two(themeText(el.dataset.th, 'en'), themeText(el.dataset.th, 'zh'), true) : themeText(el.dataset.th);
   }
   function getLang() { return currentLang; }
+  /** "Question 2 of 4", or "Question 1 · Part 1/2" when the first two questions are two parts of one. */
+  function questionLabel(item, total, linked, lang = currentLang) {
+    if (lang === 'both') return questionLabel(item, total, linked, 'en') + '   |   ' + questionLabel(item, total, linked, 'zh');
+    if (!linked) return tr('question', lang, { n: item, total });
+    if (item <= 2) return tr('questionPart', lang, { n: 1, p: lang === 'zh' ? ['一', '二'][item - 1] : item });
+    return tr('question', lang, { n: item - 1, total: total - 1 });
+  }
   /**
    * The instructions screen, from simple text (one item per line):
    *   # Heading           → big bold heading
@@ -276,5 +283,5 @@
     document.addEventListener('DOMContentLoaded', () => { if (!currentTheme) { document.body.classList.add('theme-' + t); document.body.classList.toggle('grain', t === 'horror'); } });
   } catch (_) {}
 
-  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles, tr, setLang, getLang, stepsHtml, instructionsHtml };
+  window.SB = { connect, api, sleep, $, $$, esc, showScreen, qrSvg, wifiQrText, applyTheme, themeText, loveParticles, tr, setLang, getLang, stepsHtml, instructionsHtml, questionLabel };
 })();
