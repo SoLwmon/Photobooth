@@ -125,7 +125,7 @@
     en: {
       chooseLang: 'Choose your language', english: 'English', chinese: '中文',
       pressStart: 'Press Start on the iPad to begin', pickLang: 'Choose your language on the iPad to begin',
-      howItWorks: 'How it works', start: 'Start', back: 'Back',
+      howItWorks: 'How it works', start: 'Start', back: 'Back', readBigScreen: 'Read how it works on the big screen',
       readyWhenYouAre: 'Press Start when you’re ready', introDisplayCta: 'Press Start on the iPad when you’re ready',
       question: 'Question {n} of {total}', answerNow: 'Answer now…', strikePose: 'Now strike a pose!',
       lookBig: 'Look at the big screen', lookBigSub: 'Your questions and countdowns are up there.',
@@ -149,7 +149,7 @@
     zh: {
       chooseLang: '请选择语言', english: 'English', chinese: '中文',
       pressStart: '请在 iPad 上按“开始”', pickLang: '请在 iPad 上选择语言开始',
-      howItWorks: '玩法说明', start: '开始', back: '返回',
+      howItWorks: '玩法说明', start: '开始', back: '返回', readBigScreen: '请看大屏幕上的玩法说明',
       readyWhenYouAre: '准备好了就按“开始”', introDisplayCta: '准备好了，请在 iPad 上按“开始”',
       question: '第 {n} 题 / 共 {total} 题', answerNow: '请回答……', strikePose: '摆个姿势吧！',
       lookBig: '请看大屏幕', lookBigSub: '问题和倒数都会出现在大屏幕上。',

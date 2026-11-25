@@ -117,3 +117,5 @@ body.lang-both .steps li { font-size: 18px; padding: 8px 0 8px 58px; line-height
 body.lang-both .steps li::before { top: 8px; width: 38px; height: 38px; font-size: 19px; }
 body.lang-both .intro-card .row { margin-top: 1.4vh; }
 body.lang-both .intro-card .btn.huge { padding: 18px 56px; min-height: 0; }
+.intro-card .eye { margin: 18px auto 6px; }
+.intro-card .look { margin: 8px 0 4px; }

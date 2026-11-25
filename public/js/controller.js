@@ -79,7 +79,6 @@
     switch (phase) {
       case 'idle': showScreen('s-idle'); $('#idleNote').dataset.msg = s.message || ''; break;
       case 'intro': {
-        $('#introSteps').innerHTML = SB.stepsHtml(settings && settings.instructions, lang);
         showScreen('s-intro'); break;
       }
       case 'warning':

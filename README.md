@@ -67,7 +67,7 @@ Other options are documented in the comments at the top of that file: the port n
 ## 3. Guest experience
 
 1. **iPad → Start.** Everything guests see is shown in **English with the Chinese underneath**: the instructions, every question, the countdown labels, print and download messages, and the phone download page.
-2. **Instructions** appear on the iPad and the main display (*How it works*, editable in the console; the scare is never mentioned). Guests press the second **Start** on the iPad (or **Back**). After 90 s with nobody pressing Start, the booth returns to the language screen. The session video starts recording when they press Start.
+2. **Instructions** appear on the **main display** (the iPad just says to read them on the big screen) (*How it works*, editable in the console; the scare is never mentioned). Guests press the second **Start** on the iPad (or **Back**). After 90 s with nobody pressing Start, the booth returns to the language screen. The session video starts recording when they press Start.
 3. **Five questions on the main display, at the top of the screen:**
    - **Question 1 is a warm-up:** the couple answers it, and **no photo is taken**.
    - **Questions 2–5 each end in a photo** (4 photos in total).
