@@ -201,8 +201,7 @@
       audio.loadSting(s.url).catch(e => logRemote('Sound load failed: ' + e.message));
     }
     const mu = musicUrl();
-    if (mu) audio.loadMusic(mu).then(() => syncMusic()).catch(e => logRemote('Music load failed: ' + e.message));
-    else audio.stopMusic(0.3);
+    if (mu && !demotedNow) audio.loadMusic(mu).then(() => syncMusic()).catch(e => logRemote('Music load failed: ' + e.message));
     syncMusic();
   }
 
@@ -225,14 +224,28 @@
     if (p === 'shooting') return musicDoneFor && musicDoneFor === state.sessionId ? null : 'q' + Math.min(5, Math.max(1, (state.shot ?? 0) + 1));
     return 'after'; // composing, choosing, the QR screen
   }
-  let musicStageNow = null;
+  let musicStageNow = null, musicStarting = false;
   function syncMusic() {
     const m = settings && settings.music;
+    // music switched off (or this window handed over to a newer display): silence, even during a test
+    if (demotedNow || !musicUrl()) {
+      musicTest = false; musicStageNow = null;
+      if (audio.musicPlaying) { audio.stopMusic(0.5); logRemote('Music stopped (' + (demotedNow ? 'another display window took over' : 'background music is off') + ')'); }
+      return;
+    }
     if (musicTest) return;
     const stage = musicUrl() ? musicStage() : null;
     const level = stage ? m.volume * ((m.levels && m.levels[stage]) ?? 100) / 100 : 0;
     if (stage && !audio.musicPlaying) {
-      audio.resume().then(() => { if (audio.playMusic(level, stage === 'after' ? 1.5 : 1)) logRemote(`Music started (${stage}, ${Math.round(level / (m.volume || 1) * 100)}%)`); });
+      if (musicStarting) return; // already on its way (the sound system is waking up)
+      musicStarting = true;
+      audio.resume().then(() => {
+        musicStarting = false;
+        if (demotedNow || !musicUrl() || audio.musicPlaying) return;
+        const st = musicStage(); if (!st) return;
+        const lv = m.volume * ((m.levels && m.levels[st]) ?? 100) / 100;
+        if (audio.playMusic(lv, st === 'after' ? 1.5 : 1)) { musicStageNow = st; logRemote(`Music started (${st}, ${Math.round(lv / (m.volume || 1) * 100)}%)`); }
+      });
     } else if (stage && audio.musicPlaying) {
       if (stage !== musicStageNow) audio.setMusicLevel(level, 1.5); // glide to this stage's level
       else audio.setMusicLevel(level, 0.3);
@@ -894,6 +907,7 @@
         // a newer display window took over: release the webcam so the new window can use it
         runToken++; busy = true; renderer.hide(true);
         demotedNow = true; clearTimeout(camRetryTimer); clearTimeout(scareRetryTimer); camToken++;
+        syncMusic(); // this window goes quiet: only the newest display plays music
         try { stopRecording(); } catch (_) {}
         try { stopStream(); video.srcObject = null; } catch (_) {}
         $('#sysDemoted').classList.add('on');
