@@ -29,6 +29,7 @@
     BREATHE <r> <g> <b> [ms] [bri] → OK BREATHE     (slow breathing colour)
     NEON <r> <g> <b>               → OK NEON        (RGB neon colours on the relays: 1 = on, 0 = off)
     NEONINV <r> <g> <b>            → OK NEONINV     (1 = that relay switches on with LOW; saved)
+    FLASHINV <0|1>                 → OK FLASHINV    (1 = the COB MOSFET module is on with LOW; saved)
     OFF                            → OK OFF
   Safety: the flash never stays on longer than 10 s from a PULSE, and if the PC stops talking
   for 60 s the box goes back to a calm look (flash off, strip dim pink).
@@ -70,8 +71,9 @@ uint8_t rxLen = 0;
 // ---------------------------------------------------------------- RGB neon on relays
 // Most relay boards switch ON when their input is LOW ("low-level trigger"). The polarity of each relay
 // is saved (NEONINV) so the neon stays OFF from the moment the Uno powers up.
-uint8_t neonInv = 0b111;          // default: all three relays are low-level trigger
+uint8_t neonInv = 0b101;          // default: red + blue (2-channel board) switch on with LOW, green (1-channel) with HIGH
 uint8_t neonOn = 0;               // which colours are on (r=1, g=2, b=4)
+bool flashInv = false;            // COB MOSFET module that turns ON with a LOW signal (saved as bit 8 of the same byte)
 void writeNeonPin(uint8_t pin, bool on, bool inv) { digitalWrite(pin, (on != inv) ? HIGH : LOW); }
 void setNeon(uint8_t bits) {
   neonOn = bits & 7;
@@ -79,10 +81,11 @@ void setNeon(uint8_t bits) {
   writeNeonPin(PIN_NEON_G, neonOn & 2, neonInv & 2);
   writeNeonPin(PIN_NEON_B, neonOn & 4, neonInv & 4);
 }
-void loadNeonInv() { if (EEPROM.read(EEPROM_INV + 1) == 0x5A) neonInv = EEPROM.read(EEPROM_INV) & 7; }
+void loadNeonInv() { if (EEPROM.read(EEPROM_INV + 1) == 0x5A) { uint8_t b = EEPROM.read(EEPROM_INV); neonInv = b & 7; flashInv = b & 8; } }
+void saveInv() { EEPROM.update(EEPROM_INV, neonInv | (flashInv ? 8 : 0)); EEPROM.update(EEPROM_INV + 1, 0x5A); }
 
 // ---------------------------------------------------------------- outputs
-void setFlash(uint8_t v) { analogWrite(PIN_FLASH, v); }   // 0 = off, 255 = fully on (no PWM at all)
+void setFlash(uint8_t v) { analogWrite(PIN_FLASH, flashInv ? 255 - v : v); }   // 0 = off, 255 = fully on (no PWM at all)
 void setRoom(uint8_t v)  { analogWrite(PIN_ROOM, v); }
 
 // While strip.show() sends colours to the LEDs, the UNO cannot receive from the PC (interrupts are off),
@@ -164,9 +167,13 @@ void handle(char* line) {
   }
   if (!strcmp(a[0], "NEONINV")) {
     neonInv = (ARG(1, 1) ? 1 : 0) | (ARG(2, 1) ? 2 : 0) | (ARG(3, 1) ? 4 : 0);
-    EEPROM.update(EEPROM_INV, neonInv); EEPROM.update(EEPROM_INV + 1, 0x5A);
+    saveInv();
     setNeon(neonOn);
     Serial.println(F("OK NEONINV")); return;
+  }
+  if (!strcmp(a[0], "FLASHINV")) {
+    flashInv = ARG(1, 0) != 0; saveInv(); setFlash(0);
+    Serial.println(F("OK FLASHINV")); return;
   }
   if (!strcmp(a[0], "OFF")) {
     breathing = false; pulsing = false;
@@ -178,7 +185,8 @@ void handle(char* line) {
 
 // ---------------------------------------------------------------- setup / loop
 void setup() {
-  pinMode(PIN_FLASH, OUTPUT); digitalWrite(PIN_FLASH, LOW);   // flash OFF from the very first moment
+  loadNeonInv();
+  pinMode(PIN_FLASH, OUTPUT); digitalWrite(PIN_FLASH, flashInv ? HIGH : LOW);   // COB OFF from the very first moment
   pinMode(PIN_ROOM, OUTPUT);  digitalWrite(PIN_ROOM, LOW);
   // neon relays: set the "off" level first, then make them outputs, so no relay clicks on at power-up
   loadNeonInv();

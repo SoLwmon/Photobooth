@@ -41,7 +41,7 @@ class SimulatorTransport extends EventEmitter {
       case 'PING': return reply(`PONG SCAREBOOTH-LIGHTS 1 ${this.leds}`);
       case 'LEDS': this.leds = parseInt(a[0], 10) || this.leds; return reply('OK LEDS');
       case 'PULSE': reply('OK PULSE'); return setTimeout(() => this.emit('line', 'DONE PULSE'), parseInt(a[0], 10) || 0);
-      case 'ROOM': case 'FLASH': case 'STRIP': case 'BREATHE': case 'OFF': case 'NEON': case 'NEONINV': return reply('OK ' + cmd.toUpperCase());
+      case 'ROOM': case 'FLASH': case 'STRIP': case 'BREATHE': case 'OFF': case 'NEON': case 'NEONINV': case 'FLASHINV': return reply('OK ' + cmd.toUpperCase());
       default: return reply('ERR unknown command');
     }
   }
@@ -109,7 +109,7 @@ class Lights extends EventEmitter {
     const changed = !prev || !prev.lights.enabled || prev.lights.port !== L.port;
     if (changed) this.connect();
     else if (prev.lights.ledCount !== L.ledCount && this.status.connected) this.send(`LEDS ${L.ledCount}`);
-    if (!changed && this.status.connected && ['neonInvR', 'neonInvG', 'neonInvB'].some(k => prev.lights[k] !== L[k])) this.sendNeonInv();
+    if (!changed && this.status.connected && ['neonInvR', 'neonInvG', 'neonInvB', 'flashInvert'].some(k => prev.lights[k] !== L[k])) { this.sendNeonInv(); if (this.look && this.look.cue) this.cue(this.look.cue); }
     if (!changed && this.status.connected && ['neonIdle', 'neonSession'].some(k => prev.lights[k] !== L[k]) && this.look && this.look.cue !== 'scare' && this.look.cue !== 'off') this.neon(this.look.cue === 'idle' ? L.neonIdle : L.neonSession);
     // steady COB light: a brightness / mode change shows straight away (not only at the next session)
     if (!changed && this.status.connected && (prev.lights.flashLevel !== L.flashLevel || prev.lights.flashMode !== L.flashMode)) {
@@ -242,6 +242,7 @@ class Lights extends EventEmitter {
   sendNeonInv() {
     const L = this.settings.lights;
     this.send(`NEONINV ${L.neonInvR ? 1 : 0} ${L.neonInvG ? 1 : 0} ${L.neonInvB ? 1 : 0}`);
+    this.send(`FLASHINV ${L.flashInvert ? 1 : 0}`);
   }
   /** RGB neon on three relays: each colour is just on or off, so a colour is a mix of red / green / blue. */
   neon(name) {
