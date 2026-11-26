@@ -5,16 +5,22 @@ param([int]$Port = 8080)
 $ErrorActionPreference = 'SilentlyContinue'
 $base = "http://localhost:$Port"
 
-# 1) wait for the server (up to 30 s)
+# 1) wait for the server (up to 60 s)
 $up = $false
-for ($i = 0; $i -lt 60; $i++) {
+for ($i = 0; $i -lt 120; $i++) {
   try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "$base/api/state" | Out-Null; $up = $true; break } catch { Start-Sleep -Milliseconds 500 }
 }
 if (-not $up) {
   Add-Type -AssemblyName PresentationFramework
-  [System.Windows.MessageBox]::Show("The ScareBooth server didn't start. Check the server window for an error message.", "ScareBooth") | Out-Null
+  [System.Windows.MessageBox]::Show("The ScareBooth server didn't answer on port $Port. Look at the black ScareBooth server window for the error. If it says the port is already in use, ScareBooth is already running: close every ScareBooth window (and any 'node' in Task Manager), then start it once.", "ScareBooth") | Out-Null
   exit 1
 }
+
+# A display window is already connected (ScareBooth was started twice): just open the console.
+try {
+  $st = Invoke-RestMethod -UseBasicParsing -TimeoutSec 3 "$base/api/status"
+  if ($st.clients.display -gt 0) { Start-Process "$base/admin"; exit 0 }
+} catch {}
 
 # 2) find a Chromium browser
 $chrome = @(

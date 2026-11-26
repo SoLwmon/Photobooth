@@ -233,7 +233,7 @@
         v.crossOrigin = 'anonymous';
         v.src = scare.url;
         const err = once(v, 'error').then(() => { throw new Error(`The scare video “${scare.name}” can’t be played by this browser (codec unsupported or file damaged). Try an H.264 MP4 or VP9 WebM.`); });
-        const can = Promise.race([once(v, 'canplaythrough'), new Promise(r => setTimeout(r, 12000)).then(() => { if (v.readyState < 2) throw new Error('The scare video took too long to load.'); })]);
+        const can = Promise.race([once(v, 'canplaythrough'), once(v, 'loadeddata'), new Promise(r => setTimeout(r, 25000)).then(() => { if (v.readyState < 2) throw new Error('The scare video took too long to load.'); })]);
         v.load();
         await Promise.race([can, err]);
         if (token !== this._loadToken) return;

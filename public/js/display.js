@@ -92,6 +92,7 @@
   }
 
   async function startCamera() {
+    if (typeof demotedNow !== 'undefined' && demotedNow) return; // a newer display window has the webcam
     const token = ++camToken;
     clearTimeout(camRetryTimer);
     stopStream();
@@ -160,14 +161,18 @@
     return sounds.some(x => x.id === s) ? 'file' : 'builtin';
   }
 
+  let scareRetryTimer = 0, scareFails = 0, demotedNow = false;
   async function applyScare() {
     if (!scareDesc) { scareMessage = 'No scare selected.'; return; }
+    if (demotedNow) return;
+    clearTimeout(scareRetryTimer);
     try {
       await renderer.load(scareDesc, scareDesc.profile);
-      scareMessage = renderer.webglError || '';
+      scareMessage = renderer.webglError || ''; scareFails = 0;
     } catch (e) {
-      scareMessage = e.message; console.error(e);
-      logRemote('Scare load failed: ' + e.message);
+      scareMessage = e.message + ' Retrying…'; console.error(e);
+      if (scareFails++ < 3 || scareFails % 10 === 0) logRemote('Scare load failed: ' + e.message);
+      scareRetryTimer = setTimeout(applyScare, Math.min(30000, 3000 * scareFails)); // try again on its own
     }
     $('#sysScare').textContent = scareMessage; $('#sysScare').classList.toggle('on', !!scareMessage);
     reportCamera();
@@ -811,7 +816,11 @@
       case 'reloadCamera': startCamera(); break;
       case 'reloadDisplay': location.reload(); break;
       case 'demoted':
+        // a newer display window took over: release the webcam so the new window can use it
         runToken++; busy = true; renderer.hide(true);
+        demotedNow = true; clearTimeout(camRetryTimer); clearTimeout(scareRetryTimer); camToken++;
+        try { stopRecording(); } catch (_) {}
+        try { stopStream(); video.srcObject = null; } catch (_) {}
         $('#sysDemoted').classList.add('on');
         break;
     }

@@ -355,7 +355,7 @@
       ? `${esc(cam.label || '—')}${cam.width ? ` <span class="muted">${cam.width}×${cam.height}</span>` : ''}<div class="small ${cam.ok ? 'muted' : ''}" style="${cam.ok ? '' : 'color:#ff9a9a'}">${esc(cam.message || '')}</div>` +
         (cam.audio ? '' : '<div class="small" style="color:#f3d6a0">Sound is locked on the display — click the display window once (start-scarebooth.bat avoids this).</div>')
       : '<span style="color:#ff9a9a">Display window not open.</span> <span class="muted small">Click “Open display window”, or run start-scarebooth.bat.</span>';
-    if (cam.scareMessage) $('#stScare').innerHTML += `<div class="small" style="color:#ff9a9a">Display: ${esc(cam.scareMessage)}</div>`;
+    $('#stScareDisplay').textContent = cam.scareMessage ? 'Display: ' + cam.scareMessage : '';
     $('#stUrls').innerHTML = s.urls.length ? s.urls.map(u => `<a href="${esc(u.url)}" target="_blank">${esc(u.url)}</a>`).join('') : '<span class="muted">No network found — connect this PC to Wi-Fi.</span>';
     renderCamSelect();
     // QR host choices
