@@ -154,3 +154,10 @@ body:not(.portrait) #intro .ins-cta { font-size: clamp(14px, 1.2vw, 24px); }
 
 /* instructions sit at the TOP of the screen */
 #intro, body.portrait #intro { align-items: flex-start; padding-top: 3vh; }
+
+/* instructions card: room inside the card so the step numbers don't touch its edge */
+#intro .intro-card { padding: 2.2vh 4.5vw 2vh; box-sizing: border-box; }
+#intro .steps li::before { left: 0.25em; }
+#intro .steps li { padding-left: 2.6em !important; }
+/* the corner roses sit in front of the instructions card */
+body.phase-intro .florals { z-index: 5; }
