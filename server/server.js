@@ -154,9 +154,11 @@ function applyThemePresets(target, fromTheme, toTheme) {
 const DEFAULT_SETTINGS = {
   version: 1,
   camera: { deviceId: '', label: '', resolution: '1080p', mirrorPreview: true, mirrorSaved: false, demoMode: false, fit: 'cover', portraitLayout: 'window', rotation: 90 },
-  sound: { volume: 0.85, useVideoAudio: true, sting: 'builtin' },
+  sound: { volume: 0.85, useVideoAudio: true, sting: 'builtin', scareVolume: 1 }, // scareVolume: jump-scare sound, 1 = 100 %
   // background music: starts after Start, loops, stops the moment the scare hits
-  music: { enabled: true, track: 'builtin', volume: 0.35, startAt: 'start', duckCountdown: true, duckLevel: 0 },
+  music: { enabled: true, track: 'builtin', volume: 0.35, duckCountdown: true, duckLevel: 0,
+    // % of the music volume at each stage: waiting, instructions, questions 1–5, after the scare (QR screen)
+    levels: { idle: 100, intro: 15, q1: 15, q2: 10, q3: 10, q4: 5, q5: 0, after: 100 } },
   theme: { name: 'romance' },
   // the booth's own questions (saved from the event setup, v12)
   questions: {
@@ -173,6 +175,8 @@ const DEFAULT_SETTINGS = {
     scareOnNumber: 2, scareIntoNumberMs: 300, // …or on a countdown number: 2 = while “2” shows (0 = use the random range)
     burstCount: 10, burstDurationSec: 3, burstStartMs: 300, chooseTimeoutSec: 45, // scare photos: start 0.3 s after the scare appears (reactions take a moment)
     shutterFlash: false, flashColor: 'black', doneTimeoutSec: 120, inactivityTimeoutSec: 180,
+    recordAfterScanSec: 3, // the session video keeps going this long after the guests open the QR link
+    preferReaction: 4,     // jump-scare photo: use this reaction shot (1–10) if it is sharp and shows everyone (0 = fully automatic)
   },
   flow: { chooseOnIpad: false, showWarning: false, linkFirstTwo: true }, // linkFirstTwo: questions 1 and 2 are Part 1 and Part 2 of one question
   record: { enabled: true, audio: true, micId: '', micLabel: '', videoKbps: 4000, size: '720p', keepCandidates: true },
@@ -252,12 +256,14 @@ function sanitizeSettings(s) {
     sound: {
       volume: clamp(m.sound.volume, 0, 1, 0.85), useVideoAudio: bool(m.sound.useVideoAudio, true),
       sting: str(m.sound.sting, 300, 'builtin') || 'builtin',
+      scareVolume: Math.round(clamp(m.sound.scareVolume, 0, 2, 1) * 100) / 100,
     },
     music: {
       enabled: bool((m.music || {}).enabled, true),
       track: str((m.music || {}).track, 300, 'builtin') || 'builtin',
       volume: clamp((m.music || {}).volume, 0, 1, 0.35),
-      startAt: (m.music || {}).startAt === 'questions' ? 'questions' : 'start',
+      levels: Object.fromEntries(Object.entries({ idle: 100, intro: 15, q1: 15, q2: 10, q3: 10, q4: 5, q5: 0, after: 100 })
+        .map(([k, d]) => [k, Math.round(clamp(((m.music || {}).levels || {})[k], 0, 100, d))])),
       duckCountdown: bool((m.music || {}).duckCountdown, true),
       duckLevel: clamp((m.music || {}).duckLevel, 0, 1, 0),
     },
@@ -295,6 +301,8 @@ function sanitizeSettings(s) {
       chooseTimeoutSec: Math.round(clamp(t.chooseTimeoutSec, 10, 600, 45)),
       burstDurationSec: clamp(t.burstDurationSec, 0.5, 10, 3),
       burstStartMs: Math.round(clamp(t.burstStartMs, 0, 3000, 300)),
+      recordAfterScanSec: Math.round(clamp(t.recordAfterScanSec, 0, 30, 3)),
+      preferReaction: Math.round(clamp(t.preferReaction, 0, 20, 4)),
       shutterFlash: bool(t.shutterFlash, true),
       flashColor: t.flashColor === 'white' ? 'white' : 'black',
       doneTimeoutSec: Math.round(clamp(t.doneTimeoutSec, 5, 1800, 25)),
@@ -1019,7 +1027,7 @@ function handleDisplayReport(body) {
     }
     Object.assign(state, { reactions, photos, selected: best, previewIndex: best });
     writeSessionMeta({ autoSelectedReaction: reactions[best].file, reactionScores: scores });
-    log('Auto-selected reaction', reactions[best].file);
+    log('Auto-selected reaction', reactions[best].file, r.preferred ? `(preferred reaction ${settings.timing.preferReaction}: ${r.preferred})` : '');
     startCompose();
     return { ok: true };
   }
@@ -1494,11 +1502,19 @@ async function route(req, res) {
   notFound(res);
 }
 
+const qrScannedFor = new Set();
 function serveShare(req, res, url, p) {
   const [, , token, file] = p.split('/');
   const sid = shareTokens.get(token || '');
   if (!sid || !settings.share.enabled) return sharePage(res, null);
-  if (!file) return sharePage(res, sid, token);
+  if (!file) {
+    // the guests scanned the QR code: the session video can finish (a few seconds later, for their reaction)
+    if (!qrScannedFor.has(sid)) {
+      qrScannedFor.add(sid); log('QR code scanned for', sid);
+      if (state.sessionId === sid) sendToDisplay({ cmd: 'qrScanned', sessionId: sid });
+    }
+    return sharePage(res, sid, token);
+  }
   if (!/^(strip|photo[1-3]|reaction_\d{2})\.jpg$/.test(file)) return notFound(res);
   const slug = String(settings.strip.title || 'ScareBooth').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'ScareBooth';
   const dl = url.searchParams.get('download') ? `${slug}_${sid.slice(0, 10)}_${file}` : null;

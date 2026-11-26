@@ -186,6 +186,7 @@
     else SB.setLang(SB.getLang());
     const prevScare = scareDesc; scareDesc = p.scare;
     audio.setVolume(settings.sound.volume);
+    audio.setScareVolume(settings.sound.scareVolume ?? 1);
     renderer.setAudioOptions({ useVideoAudio: settings.sound.useVideoAudio, stingKind: stingKind() });
     stage.classList.toggle('mirror', settings.camera.mirrorPreview);
     let camChanged = !prev || ['deviceId', 'resolution', 'demoMode'].some(k => prev.camera[k] !== settings.camera[k]);
@@ -202,12 +203,14 @@
     const mu = musicUrl();
     if (mu) audio.loadMusic(mu).then(() => syncMusic()).catch(e => logRemote('Music load failed: ' + e.message));
     else audio.stopMusic(0.3);
-    audio.setMusicLevel(settings.music ? settings.music.volume : 0.4);
+    syncMusic();
   }
 
   // ------------------------------------------------------------------ background music
-  // Starts when the guests press Start (or when the questions begin), loops, and stops the moment the scare hits.
-  let musicDoneFor = null; // the session whose music already ended at the scare (it doesn't come back)
+  // Loops all the time. Each stage has its own level (Console → Sound → Music levels): normal while waiting, quieter
+  // from Start, fading to nothing by the last question; it cuts out the moment the scare hits and comes back to
+  // normal after the scare — then the next couple, and it repeats.
+  let musicDoneFor = null; // the session whose scare has happened (music silent until the scare is over)
   function musicUrl() {
     const m = settings && settings.music;
     if (!m || !m.enabled || m.track === 'none') return null;
@@ -215,12 +218,26 @@
     const s = sounds.find(x => x.id === m.track);
     return s ? s.url : '/assets/music-box-waltz.wav';
   }
+  function musicStage() {
+    const p = state.phase;
+    if (p === 'idle') return 'idle';
+    if (p === 'intro' || p === 'warning') return 'intro';
+    if (p === 'shooting') return musicDoneFor && musicDoneFor === state.sessionId ? null : 'q' + Math.min(5, Math.max(1, (state.shot ?? 0) + 1));
+    return 'after'; // composing, choosing, the QR screen
+  }
+  let musicStageNow = null;
   function syncMusic() {
     const m = settings && settings.music;
-    const from = m && m.startAt === 'questions' ? ['shooting'] : ['intro', 'warning', 'shooting'];
-    const want = !!musicUrl() && from.includes(state.phase) && !(musicDoneFor && musicDoneFor === state.sessionId) && !musicTest;
-    if (want && !audio.musicPlaying) { audio.resume().then(() => { if (audio.playMusic(m.volume)) logRemote('Music started (' + state.phase + ')'); }); }
-    else if (!want && audio.musicPlaying && !musicTest) { audio.stopMusic(0.8); logRemote('Music stopped (' + state.phase + ')'); }
+    if (musicTest) return;
+    const stage = musicUrl() ? musicStage() : null;
+    const level = stage ? m.volume * ((m.levels && m.levels[stage]) ?? 100) / 100 : 0;
+    if (stage && !audio.musicPlaying) {
+      audio.resume().then(() => { if (audio.playMusic(level, stage === 'after' ? 1.5 : 1)) logRemote(`Music started (${stage}, ${Math.round(level / (m.volume || 1) * 100)}%)`); });
+    } else if (stage && audio.musicPlaying) {
+      if (stage !== musicStageNow) audio.setMusicLevel(level, 1.5); // glide to this stage's level
+      else audio.setMusicLevel(level, 0.3);
+    } else if (!stage && audio.musicPlaying) { audio.stopMusic(0.8); }
+    musicStageNow = stage;
   }
   let musicTest = false;
   // the music dips during each countdown and comes back once the photo is taken
@@ -229,7 +246,7 @@
     if (!m || !m.duckCountdown) { audio.duckMusic(false, 1, 0.3); return; }
     if (on) audio.duckMusic(true, m.duckLevel || 0, 0.7); else audio.duckMusic(false, 1, 1.2);
   }
-  function musicAtScare() { musicDoneFor = state.sessionId; musicTest = false; if (audio.musicPlaying) logRemote('Music stopped at the jump scare'); audio.stopMusic(0.06); }
+  function musicAtScare() { musicDoneFor = state.sessionId; musicTest = false; musicStageNow = null; if (audio.musicPlaying) logRemote('Music stopped at the jump scare'); audio.stopMusic(0.06); }
 
   // ------------------------------------------------------------------ UI per phase
   function layerOn(...ids) { for (const el of $$('.layer')) el.classList.toggle('on', ids.includes(el.id)); }
@@ -244,6 +261,8 @@
 
   function onState(s) {
     const prev = state; state = s;
+    // the session video ends when the booth goes back to waiting (no QR scan) or a new session begins
+    if (rec.mr && (s.phase === 'idle' || (rec.sessionId && s.sessionId && s.sessionId !== rec.sessionId))) { logRemote('Session video stopped (' + (s.phase === 'idle' ? 'back to waiting' : 'new session') + ')'); stopRecording(); }
     if (s.sessionId !== prev.sessionId) musicDoneFor = null;
     syncMusic();
     document.body.className = document.body.className.replace(/\bphase-\S+/g, '').trim() + ' phase-' + s.phase;
@@ -736,14 +755,15 @@
       // competes with the scare video for the graphics card.
       // the photos start a moment after the scare appears (people need ~0.3 s to react) and run through the scare
       const frames = await captureBurst(t.burstCount, t.burstDurationSec * 1000, visibleAt + (t.burstStartMs ?? 300), token, true);
-      // the last picture is taken: stop the session video, put the lights back to normal
-      stopRecording();
+      // the last picture is taken: put the lights back to normal. The session video keeps recording through the
+      // strip and QR screen; it stops a moment after the guests open the QR link (or when the booth goes back to waiting).
       setTimeout(() => lightCue('session'), L.revertDelayMs ?? 300);
       await Promise.race([done, sleep(4000)]); // let the scare finish playing smoothly first
       for (const f of frames) f.bmp = await upright(f.bmp);
       const offsets = frames.map(f => Math.round(f.offset));
       const reaction = reactionScores(frames);
-      const pick = await SBBest.pick(frames.map(f => f.bmp), { reaction });
+      // prefer one reaction shot (Console → Timing: reaction 4 by default) when it is sharp, well lit and shows everyone
+      const pick = await SBBest.pick(frames.map(f => f.bmp), { reaction, prefer: (t.preferReaction || 0) - 1 });
       await uploadPool(frames, async (f, i) => {
         const name = `reaction_${String(i + 1).padStart(2, '0')}.jpg`;
         const { full, thumb } = await encode(f.bmp);
@@ -753,7 +773,7 @@
       await Promise.race([done, sleep(10000)]);
       check(token);
       report({
-        type: 'reactionsDone', cmdId: cmd.cmdId, count: frames.length, offsets, scores: pick.scores, best: pick.best, details: pick.details, faceAnalysis: pick.faceAnalysis,
+        type: 'reactionsDone', cmdId: cmd.cmdId, count: frames.length, offsets, scores: pick.scores, best: pick.best, details: pick.details, faceAnalysis: pick.faceAnalysis, preferred: pick.preferred,
         timing: { scareAtMsIntoCountdown: Math.round(scareAtMs), scareStartToVisibleMs: Math.round(visibleAt - t0), burstSpanMs: offsets[offsets.length - 1] },
       });
     } catch (e) {
@@ -852,6 +872,13 @@
         break;
       case 'print': case 'reprint': runPrint(cmd); break;
       case 'testPrint': runPrint({ ...cmd, stripUrl: cmd.stripUrl || '/assets/test-strip.jpg' }); break;
+      case 'qrScanned':
+        // the guests opened their QR link: record a little longer for their reaction, then finish the session video
+        if (rec.mr && (!cmd.sessionId || cmd.sessionId === rec.sessionId)) {
+          const sid = rec.sessionId;
+          setTimeout(() => { if (rec.mr && rec.sessionId === sid) { logRemote('Session video stopped (QR code scanned)'); stopRecording(); } }, Math.max(0, (settings.timing.recordAfterScanSec ?? 3) * 1000));
+        }
+        break;
       case 'testSound': audio.resume().then(() => audio.playSting(stingKind())); break;
       case 'testMusic': {
         const mu = musicUrl();
@@ -860,7 +887,7 @@
         audio.resume().then(() => audio.loadMusic(mu)).then(() => audio.playMusic(settings.music.volume)).catch(e => logRemote('Music load failed: ' + e.message));
         break;
       }
-      case 'stopMusic': musicTest = false; audio.stopMusic(0.4); syncMusic(); break;
+      case 'stopMusic': musicTest = false; audio.stopMusic(0.4); musicStageNow = null; setTimeout(syncMusic, 600); break;
       case 'reloadCamera': startCamera(); break;
       case 'reloadDisplay': location.reload(); break;
       case 'demoted':

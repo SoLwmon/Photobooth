@@ -21,7 +21,7 @@
   }
   const getPath = (o, p) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
   function nest(path, val) { const keys = path.split('.'); const out = {}; let cur = out; keys.forEach((k, i) => { if (i === keys.length - 1) cur[k] = val; else cur = cur[k] = {}; }); return out; }
-  function fmt(v) { return typeof v === 'number' ? (Math.abs(v) < 10 ? v.toFixed(2) : String(Math.round(v))) : String(v); }
+  function fmt(v, path) { return typeof v === 'number' ? (path && /\.levels\./.test(path) ? String(Math.round(v)) : Math.abs(v) < 10 ? v.toFixed(2) : String(Math.round(v))) : String(v); }
 
   async function savePatch(patch) {
     try {
@@ -67,7 +67,7 @@
     if (!(keepLocal && sameScare && profile)) profile = p.scare ? p.scare.profile : null;
     else payload = { ...p, scare: { ...p.scare, profile } };
     for (const el of $$('[data-path]')) writeInput(el, getPath(settings, el.dataset.path));
-    for (const o of $$('[data-for-path]')) o.textContent = fmt(getPath(settings, o.dataset.forPath));
+    for (const o of $$('[data-for-path]')) o.textContent = fmt(getPath(settings, o.dataset.forPath), o.dataset.forPath);
     if (profile) {
       for (const el of $$('[data-profile]')) writeInput(el, getPath(profile, el.dataset.profile));
       for (const o of $$('output[data-for]')) o.textContent = fmt(getPath(profile, o.dataset.for));
@@ -90,7 +90,7 @@
       p.sounds.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
     ms.value = p.sounds.some(s => s.id === settings.music.track) ? settings.music.track : 'builtin';
     renderer.setAudioOptions({ useVideoAudio: settings.sound.useVideoAudio, stingKind: ['builtin', 'none'].includes(settings.sound.sting) ? settings.sound.sting : 'file' });
-    audio.setVolume(settings.sound.volume);
+    audio.setVolume(settings.sound.volume); audio.setScareVolume(settings.sound.scareVolume ?? 1);
     if (!['builtin', 'none'].includes(settings.sound.sting)) { const s = p.sounds.find(x => x.id === settings.sound.sting); if (s) audio.loadSting(s.url).catch(() => {}); }
     pvStage.classList.toggle('mirror', settings.camera.mirrorPreview);
     loadPreviewScare();
@@ -120,7 +120,7 @@
       const o = $(`output[data-for="${el.dataset.profile}"]`); if (o) o.textContent = fmt(v);
       if (el.type === 'range' || el.type === 'color' || el.type === 'checkbox') throttledSave('p:' + el.dataset.profile, () => saveProfile(el.dataset.profile, v));
     } else if (el.dataset.path) {
-      const o = $(`output[data-for-path="${el.dataset.path}"]`); if (o) o.textContent = fmt(readInput(el));
+      const o = $(`output[data-for-path="${el.dataset.path}"]`); if (o) o.textContent = fmt(readInput(el), el.dataset.path);
       if (el.type === 'range') throttledSave(el.dataset.path, () => savePath(el));
       else if (el.tagName === 'TEXTAREA' || el.type === 'text') throttledSave(el.dataset.path, () => savePath(el), 700);
     }

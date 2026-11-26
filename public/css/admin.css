@@ -110,3 +110,8 @@ legend label { margin: 0; }
 .split.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .print-adjust { margin: 12px 0 6px; padding-top: 10px; border-top: 1px solid var(--line); }
 .print-adjust label.small { font-size: 12px; }
+
+/* music level per stage */
+.levels { display: grid; gap: 4px; margin: 4px 0 8px; }
+.levels .lvl { display: grid; grid-template-columns: minmax(150px, 1fr) 1.2fr 34px auto; align-items: center; gap: 8px; margin: 0; text-transform: none; letter-spacing: 0; font-size: 13px; }
+.levels .lvl output { text-align: right; font-variant-numeric: tabular-nums; }

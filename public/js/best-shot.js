@@ -130,7 +130,7 @@
    * Score candidate frames. `frames` are ImageBitmaps / canvases. `reaction` (optional) is an array of
    * reaction strengths (0..n) for the jump-scare burst. Returns { best, scores, details, faceAnalysis }.
    */
-  async function pick(frames, { reaction = null, times = null, idealMs = null } = {}) {
+  async function pick(frames, { reaction = null, times = null, idealMs = null, prefer = -1 } = {}) {
     await load();
     const a = [];
     for (const f of frames) a.push(await analyzeFrame(f, false));
@@ -210,8 +210,17 @@
       details.forEach((d, i) => { if (ok(d, i, n) && (best < 0 || d.score > details[best].score)) best = i; });
     }
     if (best < 0) best = 0;
+    // A preferred frame (e.g. reaction 4): use it if it passes every rule; otherwise the nearest frame that does.
+    let preferred = null;
+    if (prefer >= 0 && prefer < details.length) {
+      const good = details.map((d, i) => i).filter(i => ok(details[i], i, rules.length));
+      if (good.length) {
+        good.sort((p, q) => Math.abs(p - prefer) - Math.abs(q - prefer) || details[q].score - details[p].score);
+        best = good[0]; preferred = best === prefer ? 'used' : 'nearest';
+      } else preferred = 'none passed';
+    }
     details.forEach((d, i) => { d.passed = rules.map(r => r(d)); });
-    return { best, scores: details.map(d => d.score), details, faceAnalysis: faceReady };
+    return { best, scores: details.map(d => d.score), details, faceAnalysis: faceReady, preferred };
   }
 
   /** Where the faces are in a photo (0–1 of width/height), or null. Used to crop tall photos for the strip. */

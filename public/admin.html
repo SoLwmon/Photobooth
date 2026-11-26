@@ -138,6 +138,8 @@
       <h2>Sound</h2>
       <label>Master volume <output data-for-path="sound.volume"></output></label>
       <input type="range" min="0" max="1" step="0.01" data-path="sound.volume">
+      <label>Jump-scare volume <output data-for-path="sound.scareVolume"></output> <span class="muted small">(1 = normal, 0.5 = half, 2 = twice as loud — the scare video’s sound and the sting)</span></label>
+      <input type="range" min="0" max="2" step="0.05" data-path="sound.scareVolume">
       <label>Scare sting</label>
       <select id="stingSelect" data-path="sound.sting"></select>
       <label class="btn small ghost filebtn">Upload sound… <input type="file" id="soundFile" accept="audio/*,.mp3,.wav,.ogg,.m4a"></label>
@@ -146,18 +148,24 @@
       <div class="actions"><button class="btn small" data-cmd="testSound">🔊 Test sound on booth</button></div>
       <hr>
       <h3 style="margin:6px 0 4px">Background music</h3>
-      <p class="muted small" style="margin-top:0">Plays after the guests press Start, loops if it is short, and stops the moment the jump scare hits.</p>
+      <p class="muted small" style="margin-top:0">Loops all the time (short tracks repeat). Set how loud it is at each stage below; it cuts out the moment the jump scare hits.</p>
       <label class="toggle"><input type="checkbox" data-path="music.enabled"> Play background music</label>
       <label>Music</label>
       <select id="musicSelect" data-path="music.track"></select>
       <label class="btn small ghost filebtn">Upload music… <input type="file" id="musicFile" accept="audio/*,.mp3,.wav,.ogg,.m4a"></label>
       <label>Music volume <output data-for-path="music.volume"></output> <span class="muted small">(compared with the master volume)</span></label>
       <input type="range" min="0" max="1" step="0.01" data-path="music.volume">
-      <label>Start the music</label>
-      <select data-path="music.startAt">
-        <option value="start">When guests tap the first Start (plays during the instructions too)</option>
-        <option value="questions">When the questions begin (second Start)</option>
-      </select>
+      <label style="margin-top:10px"><b>Music level at each stage</b> <span class="muted small">— % of the music volume. The music cuts out at the jump scare and comes back at “after the jump scare”.</span></label>
+      <div class="levels">
+        <label class="lvl"><span>While waiting (before Start)</span><input type="range" min="0" max="100" step="5" data-path="music.levels.idle"><output data-for-path="music.levels.idle"></output>%</label>
+        <label class="lvl"><span>Instructions (after the first Start)</span><input type="range" min="0" max="100" step="5" data-path="music.levels.intro"><output data-for-path="music.levels.intro"></output>%</label>
+        <label class="lvl"><span>Question 1</span><input type="range" min="0" max="100" step="5" data-path="music.levels.q1"><output data-for-path="music.levels.q1"></output>%</label>
+        <label class="lvl"><span>Question 2</span><input type="range" min="0" max="100" step="5" data-path="music.levels.q2"><output data-for-path="music.levels.q2"></output>%</label>
+        <label class="lvl"><span>Question 3</span><input type="range" min="0" max="100" step="5" data-path="music.levels.q3"><output data-for-path="music.levels.q3"></output>%</label>
+        <label class="lvl"><span>Question 4</span><input type="range" min="0" max="100" step="5" data-path="music.levels.q4"><output data-for-path="music.levels.q4"></output>%</label>
+        <label class="lvl"><span>Question 5 (the jump-scare question)</span><input type="range" min="0" max="100" step="5" data-path="music.levels.q5"><output data-for-path="music.levels.q5"></output>%</label>
+        <label class="lvl"><span>After the jump scare (strip + QR code)</span><input type="range" min="0" max="100" step="5" data-path="music.levels.after"><output data-for-path="music.levels.after"></output>%</label>
+      </div>
       <label class="toggle"><input type="checkbox" data-path="music.duckCountdown"> Fade the music out during each countdown (it comes back after the photo)</label>
       <label>Music during the countdown <output data-for-path="music.duckLevel"></output> <span class="muted small">(0 = silent, 1 = no change)</span></label>
       <input type="range" min="0" max="1" step="0.05" data-path="music.duckLevel">
@@ -184,6 +192,7 @@
         <div><label>Jump-scare reaction photos</label><input type="number" min="2" max="40" step="1" data-path="timing.burstCount"></div>
         <div><label>Reaction burst length (s)</label><input type="number" min="0.5" max="10" step="0.1" data-path="timing.burstDurationSec"></div>
         <div><label>Reaction photos start after the scare appears (ms)</label><input type="number" min="0" max="3000" step="50" data-path="timing.burstStartMs"></div>
+          <div><label>Jump-scare photo: prefer reaction shot <span class="muted small">(1–10; used if it’s sharp, not over-exposed and shows everyone, otherwise the nearest good one; 0 = fully automatic)</span></label><input type="number" min="0" max="20" step="1" data-path="timing.preferReaction"></div>
         <div style="grid-column:1/-1"><label class="toggle"><input type="checkbox" data-path="flow.chooseOnIpad"> Guests pick the final photo on the iPad <span class="muted small">(off = the booth picks the best reaction)</span></label></div>
         <div><label>Time to pick on iPad (s)</label><input type="number" min="10" max="600" step="5" data-path="timing.chooseTimeoutSec"></div>
         <div><label class="toggle"><input type="checkbox" data-path="flow.showWarning"> Show a warning screen before starting</label></div>
@@ -195,7 +204,7 @@
     <!-- SESSION VIDEO -->
     <section class="card">
       <h2>Session video</h2>
-      <label class="toggle hl"><input type="checkbox" data-path="record.enabled"> Record each session (from Start until the last photo)</label>
+      <label class="toggle hl"><input type="checkbox" data-path="record.enabled"> Record each session (from Start until the guests scan their QR code)</label>
       <label class="toggle"><input type="checkbox" data-path="record.audio"> Record sound from a microphone</label>
       <label>Microphone</label>
       <select id="micSelect"></select>
@@ -203,6 +212,8 @@
       <select data-path="record.videoKbps"><option value="2000">Small files (2 Mbps)</option><option value="4000">Good (4 Mbps)</option><option value="8000">High (8 Mbps)</option></select>
       <label>Session video size</label>
       <select data-path="record.size"><option value="720p">720p — lighter, keeps the jump scare smooth (recommended)</option><option value="full">Same as the camera (heavier)</option></select>
+      <label>Keep recording after the QR code is scanned (seconds) <span class="muted small">— the video also stops when the booth goes back to waiting</span></label>
+      <input type="number" min="0" max="30" step="1" data-path="timing.recordAfterScanSec">
       <label class="toggle"><input type="checkbox" data-path="record.keepCandidates"> Keep every photo from each flash burst (not only the best)</label>
       <p class="muted small">Videos are saved only on this PC, in each session’s folder (<i>interaction.mp4</i> or <i>.webm</i>). They are never shown on the QR download page. Open them from the <a href="/gallery" target="_blank" style="color:#ffb3b8">gallery</a>.</p>
     </section>

@@ -77,12 +77,21 @@
         this.master = this.ctx.createGain();
         this.master.gain.value = this.volume;
         this.master.connect(this.ctx.destination);
+        // the jump-scare sound (scare video audio + sting) has its own volume, under the master volume
+        this.scareBus = this.ctx.createGain(); this.scareBus.gain.value = 1; this.scareBus.connect(this.master);
       }
       this.stingBuffer = null; this.stingUrl = null;
     }
     get running() { return !!this.ctx && this.ctx.state === 'running'; }
     async resume() { if (this.ctx && this.ctx.state !== 'running') { try { await this.ctx.resume(); } catch (_) {} } return this.running; }
     setVolume(v) { this.volume = v; if (this.master) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02); }
+    /** Jump-scare loudness: 1 = as recorded, 0.5 = half, 2 = twice as loud. */
+    setScareVolume(v) { this.scareVolume = v; if (this.scareBus) this.scareBus.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02); }
+    /** Send a scare <video>'s sound through the jump-scare volume (only possible once per video element). */
+    routeVideo(v) {
+      if (!this.ctx || !v || v._sbRouted) return;
+      try { this.ctx.createMediaElementSource(v).connect(this.scareBus); v._sbRouted = true; } catch (e) { console.warn('scare audio routing', e); }
+    }
     async loadSting(url) {
       if (!this.ctx || !url) { this.stingBuffer = null; this.stingUrl = null; return; }
       if (url === this.stingUrl && this.stingBuffer) return;
@@ -94,7 +103,7 @@
     playSting(kind) {
       if (!this.ctx || kind === 'none') return;
       if (kind === 'file' && this.stingBuffer) {
-        const s = this.ctx.createBufferSource(); s.buffer = this.stingBuffer; s.connect(this.master); s.start(); return;
+        const s = this.ctx.createBufferSource(); s.buffer = this.stingBuffer; s.connect(this.scareBus); s.start(); return;
       }
       this._synthSting();
     }
@@ -108,7 +117,7 @@
     _synthSting() {
       const ctx = this.ctx, t = ctx.currentTime + 0.003;
       const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 6;
-      const out = ctx.createGain(); out.gain.value = 1.0; comp.connect(out); out.connect(this.master);
+      const out = ctx.createGain(); out.gain.value = 1.0; comp.connect(out); out.connect(this.scareBus);
       // shriek of noise
       const n = this._noise(1.6), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
       bp.type = 'bandpass'; bp.Q.value = 0.9; bp.frequency.setValueAtTime(3200, t); bp.frequency.exponentialRampToValueAtTime(500, t + 1.3);
@@ -156,7 +165,12 @@
       const s = this.ctx.createBufferSource(); s.buffer = this.musicBuffer; s.loop = true; s.connect(g); s.start(t + 0.02);
       this.musicSrc = s; this.musicGain = g; return true;
     }
-    setMusicLevel(level) { this.musicLevel = level; if (this.musicGain && !this.musicDucked) this.musicGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.1); }
+    setMusicLevel(level, fadeSec = 0.3) {
+      this.musicLevel = level;
+      if (!this.musicGain || this.musicDucked) return; // while ducked, the new level applies when it comes back
+      const g = this.musicGain.gain, t = this.ctx.currentTime;
+      g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(level, t + Math.max(0.02, fadeSec));
+    }
     /** Dip the music (e.g. during a countdown) to `to` × its level, or bring it back. */
     duckMusic(on, to = 0, fadeSec = 0.6) {
       this.musicDucked = !!on;
@@ -423,6 +437,7 @@
         v.loop = false;
         if (v.currentTime > 0.05) { v.currentTime = 0; await Promise.race([once(v, 'seeked'), new Promise(r => setTimeout(r, 800))]); }
         const wantSound = this.useVideoAudio && this.audio && this.audio.running;
+        if (wantSound) this.audio.routeVideo(v); // its sound follows the jump-scare volume
         v.muted = !wantSound;
         try { await v.play(); } catch (_) { v.muted = true; try { await v.play(); } catch (e) { console.warn('scare video play failed', e); } }
         if ('requestVideoFrameCallback' in v) await Promise.race([new Promise(r => v.requestVideoFrameCallback(() => r())), new Promise(r => setTimeout(r, 250))]);
