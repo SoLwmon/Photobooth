@@ -229,7 +229,7 @@
               <label class="toggle"><input type="checkbox" data-path="lights.neonInvG"> Green relay switches on with LOW</label>
               <label class="toggle"><input type="checkbox" data-path="lights.neonInvB"> Blue relay switches on with LOW</label>
               <label class="toggle"><input type="checkbox" data-path="lights.flashInvert"> COB light is reversed (on when it should be off)</label></div>
-            <div><label>Pin 10 output (relay)</label><select data-path="lights.relayMode"><option value="room">Room light — on normally, off at the scare</option><option value="scare">Scare light — on only at the jump scare (e.g. red neon)</option></select></div>
+            <div><label>Pin 10 output <span class="muted small">(old Uno code only — the new code makes pin 10 copy the COB light)</span></label><select data-path="lights.relayMode"><option value="room">Room light — on normally, off at the scare</option><option value="scare">Scare light — on only at the jump scare (e.g. red neon)</option></select></div>
             <div><label class="toggle" style="margin-top:26px"><input type="checkbox" data-path="lights.relayInvert"> Relay switches on with LOW (flip if it’s on when it should be off)</label></div>
             <div><label>Room light level <output data-for-path="lights.roomLevel"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.roomLevel"></div>
             <div><label>White COB light brightness <output data-for-path="lights.flashLevel"></output> <span class="muted small">(0–255)</span></label><input type="range" min="0" max="255" step="1" data-path="lights.flashLevel"></div>

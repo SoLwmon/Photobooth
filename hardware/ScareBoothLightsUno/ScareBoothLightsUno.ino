@@ -10,7 +10,7 @@
     D4  ──► 1-channel relay IN/S ──► RGB neon GREEN wire
            (each relay connects its colour wire to GND; the neon's common + goes to 12 V)
     D6  ──► (optional) 330 Ω ──► addressable WS2811/WS2812 strip DATA — not used with the RGB neon
-    D10 ──► (optional) extra relay / MOSFET for a room light — leave unconnected if not used
+    D10 ──► same signal as D9 (the COB light also works if its MOSFET wire is on D10)
     GND ──► ground of the relay boards and the MOSFET module (and the 12 V / 24 V supply −)
     5V  ──► VCC of the relay boards
     USB ──► laptop (powers the Uno and carries ScareBooth's commands)
@@ -43,7 +43,7 @@
 // ---------------- pins (change here if you wire differently)
 const uint8_t PIN_STRIP = 6;
 const uint8_t PIN_FLASH = 9;    // 24 V COB light MOSFET gate. Timer1 pin: ~31 kHz PWM, so a dimmed light never flickers on camera
-const uint8_t PIN_ROOM  = 10;   // Timer1 pin: ~31 kHz (optional room light)
+const uint8_t PIN_FLASH2 = 10;  // Timer1 pin: a copy of the COB signal, so the light works on D9 or D10
 const uint8_t PIN_NEON_R = 7;   // 2-channel relay IN1
 const uint8_t PIN_NEON_B = 8;   // 2-channel relay IN2
 const uint8_t PIN_NEON_G = 4;   // 1-channel relay IN / S
@@ -85,8 +85,8 @@ void loadNeonInv() { if (EEPROM.read(EEPROM_INV + 1) == 0x5A) { uint8_t b = EEPR
 void saveInv() { EEPROM.update(EEPROM_INV, neonInv | (flashInv ? 8 : 0)); EEPROM.update(EEPROM_INV + 1, 0x5A); }
 
 // ---------------------------------------------------------------- outputs
-void setFlash(uint8_t v) { analogWrite(PIN_FLASH, flashInv ? 255 - v : v); }   // 0 = off, 255 = fully on (no PWM at all)
-void setRoom(uint8_t v)  { analogWrite(PIN_ROOM, v); }
+void setFlash(uint8_t v) { uint8_t o = flashInv ? 255 - v : v; analogWrite(PIN_FLASH, o); analogWrite(PIN_FLASH2, o); }   // 0 = off, 255 = fully on
+void setRoom(uint8_t v)  { (void)v; }   // no separate room light any more: D10 copies the COB signal
 
 // While strip.show() sends colours to the LEDs, the UNO cannot receive from the PC (interrupts are off),
 // so a command arriving at that moment would be lost. So the colour is only *prepared* here, and sent
@@ -187,7 +187,7 @@ void handle(char* line) {
 void setup() {
   loadNeonInv();
   pinMode(PIN_FLASH, OUTPUT); digitalWrite(PIN_FLASH, flashInv ? HIGH : LOW);   // COB OFF from the very first moment
-  pinMode(PIN_ROOM, OUTPUT);  digitalWrite(PIN_ROOM, LOW);
+  pinMode(PIN_FLASH2, OUTPUT); digitalWrite(PIN_FLASH2, flashInv ? HIGH : LOW);
   // neon relays: set the "off" level first, then make them outputs, so no relay clicks on at power-up
   loadNeonInv();
   setNeon(0);

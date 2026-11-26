@@ -28,7 +28,7 @@ Laptop ──USB (USB-B cable)──► Arduino UNO
                                5V  ──► relay boards VCC
                                GND ──► relay boards GND, MOSFET GND, supply (−)
 RGB neon: common (+) wire ──► 12 V;  each colour wire ──► its relay (relay closes it to GND)
-D6 (addressable strip data) and D10 (extra relay) are optional and can stay unconnected.
+D10 sends the same signal as D9, so the COB light works on either pin. D6 (addressable strip data) is optional.
 ```
 
 **Pins at a glance:** **D9 = COB light** (PWM brightness), **D7 = neon red**, **D8 = neon blue**, **D4 = neon green**.
