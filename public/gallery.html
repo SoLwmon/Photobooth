@@ -21,30 +21,134 @@
     .status { font-size: 13px; min-height: 1.2em; color: #f3d6a0; }
     .status.ok { color: #9fd8a2; }
     p { color: var(--ash); }
+    .edit { font-size: 15px; min-height: 40px; padding: 6px 10px; }
+    /* ---- strip editor ---- */
+    #ed { position: fixed; inset: 0; background: #070304; z-index: 50; display: flex; gap: 26px; padding: 22px 26px; }
+    #ed[hidden] { display: none; }
+    #ed .pick { flex: 1; overflow: auto; min-width: 0; }
+    #ed h2 { margin: 0 0 4px; font-size: 26px; }
+    #ed .slot { margin: 16px 0 6px; }
+    #ed .slot h3 { margin: 0 0 8px; font-size: 17px; letter-spacing: .04em; color: #ffd0d4; font-weight: 600; }
+    #ed .row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; }
+    #ed .row button { flex: 0 0 auto; padding: 0; border: 3px solid transparent; background: #000; cursor: pointer; position: relative; border-radius: 6px; overflow: hidden; }
+    #ed .row img { display: block; height: 132px; width: auto; }
+    #ed .row button.on { border-color: #ff4d6d; box-shadow: 0 0 0 2px #ff4d6d55, 0 0 18px #ff4d6d88; }
+    #ed .row button.on::after { content: '✓'; position: absolute; top: 4px; right: 6px; background: #ff4d6d; color: #fff; border-radius: 50%; width: 24px; height: 24px; font-size: 15px; line-height: 24px; text-align: center; }
+    #ed .row .tag { position: absolute; left: 4px; bottom: 4px; background: #000a; color: #fff; font-size: 11px; padding: 1px 5px; border-radius: 3px; }
+    #ed .side { flex: 0 0 300px; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+    #ed .side img { width: 100%; max-height: 68vh; object-fit: contain; background: #000; }
+    #ed .side .btn { font-size: 16px; min-height: 44px; }
+    #ed .side .print { gap: 6px; }
+    #ed .muted { color: var(--ash); font-size: 13px; }
   </style>
 </head>
 <body class="grain">
   <h1 class="logo">Gallery</h1>
   <p id="dir"></p>
   <div class="grid" id="grid"></div>
+
+  <div id="ed" hidden>
+    <div class="pick">
+      <h2 class="logo">Edit strip</h2>
+      <div class="muted" id="edId"></div>
+      <p class="muted" style="margin:6px 0 0">Tap a different picture for any slot. The preview on the right updates, then press <b>Save strip</b>. The guest’s QR download shows the new strip too.</p>
+      <div id="edSlots"></div>
+    </div>
+    <div class="side">
+      <img id="edPreview" alt="New strip preview">
+      <div class="status" id="edStatus"></div>
+      <button class="btn" id="edSave">💾 Save strip</button>
+      <div class="print eprint"><select id="edCopies" aria-label="Copies"></select><button class="btn" id="edSavePrint">💾 Save &amp; 🖨 print</button></div>
+      <button class="btn ghost" id="edRestore" hidden>↩ Back to the booth’s original</button>
+      <button class="btn ghost" id="edClose">Close</button>
+    </div>
+  </div>
   <script src="/js/common.js"></script>
+  <script src="/js/strip.js"></script>
   <script>
     const { $, $$, api, esc } = SB;
-    Promise.all([api('/api/sessions'), api('/api/settings')]).then(([r, st]) => {
+    let settings = null;
+    function load() { return Promise.all([api('/api/sessions'), api('/api/settings')]).then(([r, st]) => {
+      settings = st.settings;
       const layout = st.settings.print.layout;
       $('#dir').textContent = `${r.sessions.length} sessions · stored in ${r.sessionsDir}` +
         ` · reprints go to the Windows default printer (layout: ${layout === '4x6-double' ? 'two strips per 4×6 sheet' : layout === '2x6' ? '2×6 strip' : 'one strip per 4×6 sheet'})`;
       const opts = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
       $('#grid').innerHTML = r.sessions.map(s => `
         <div class="s" data-id="${esc(s.id)}">
-          ${s.strip ? `<a href="${s.strip}" target="_blank"><img loading="lazy" src="${s.strip}"></a>` : `<div class="ph">No strip (session not finished)</div>`}
+          ${s.strip ? `<a href="${s.strip}?t=${Date.now()}" target="_blank"><img loading="lazy" src="${s.strip}?t=${Date.now()}"></a>` : `<div class="ph">No strip (session not finished)</div>`}
           <div class="meta">${esc(s.id)}<br>${s.photos} photos · ${s.reactions} reactions · printed ${s.prints}${s.strip ? ` · <a href="${s.strip}?download=1">download</a>` : ''}${s.video ? ` · <a href="${s.video}" target="_blank">▶ video</a>` : ''}</div>
+          ${s.photos ? `<button class="btn ghost edit">✏️ Edit strip</button>` : ''}
           ${s.strip ? `<div class="print"><select aria-label="Copies">${opts}</select><button class="btn">🖨 Print</button></div><div class="status"></div>` : ''}
         </div>`).join('') || '<p>No sessions yet.</p>';
-    }).catch(e => $('#dir').textContent = e.message);
+      $('#edCopies').innerHTML = opts;
+    }).catch(e => $('#dir').textContent = e.message); }
+    load();
+
+    // ---------------- strip editor ----------------
+    const SLOT_NAMES = ['Photo 1', 'Photo 2', 'Photo 3', 'Jump-scare photo'];
+    let ed = null; // { id, base, picks: [file x4], building }
+    async function openEditor(id) {
+      const r = await api('/api/admin/session-photos?id=' + encodeURIComponent(id));
+      ed = { id, base: r.base, picks: r.slots.map(s => s.current), blob: null, seq: 0 };
+      $('#edId').textContent = id;
+      $('#edRestore').hidden = !r.hasOriginal;
+      $('#edSlots').innerHTML = r.slots.map((s, i) => `
+        <div class="slot"><h3>${SLOT_NAMES[i]} <span class="muted">· ${s.files.length} to choose from</span></h3>
+          <div class="row" data-slot="${i}">${s.files.map((f, k) => `
+            <button class="${f === s.current ? 'on' : ''}" data-file="${esc(f)}" title="${esc(f)}"><img loading="lazy" src="${r.base}${f}"><span class="tag">${f.startsWith('candidates/') || f.startsWith('reaction_') ? '#' + (f.match(/(\d{2})\.jpg$/) || [, ''])[1] : 'chosen'}</span></button>`).join('') || '<span class="muted">No pictures were kept for this slot.</span>'}</div></div>`).join('');
+      $('#ed').hidden = false; document.body.style.overflow = 'hidden';
+      rebuild();
+    }
+    async function rebuild() {
+      const seq = ++ed.seq;
+      $('#edStatus').className = 'status'; $('#edStatus').textContent = 'Building the strip…';
+      $('#edSave').disabled = $('#edSavePrint').disabled = true;
+      try {
+        if (ed.picks.some(f => !f)) throw new Error('A slot has no picture to use.');
+        const urls = ed.picks.map(f => ed.base + f);
+        const { blob } = await SBStrip.buildStrip({ photos: urls.slice(0, 3), reaction: urls[3], strip: { ...settings.strip, theme: settings.theme.name } });
+        if (seq !== ed.seq) return;
+        ed.blob = blob;
+        const old = $('#edPreview').src; $('#edPreview').src = URL.createObjectURL(blob); if (old.startsWith('blob:')) URL.revokeObjectURL(old);
+        $('#edStatus').textContent = '';
+        $('#edSave').disabled = $('#edSavePrint').disabled = false;
+      } catch (e) { if (seq === ed.seq) $('#edStatus').textContent = e.message; }
+    }
+    async function save(copies) {
+      if (!ed || !ed.blob) return;
+      $('#edSave').disabled = $('#edSavePrint').disabled = true;
+      $('#edStatus').className = 'status'; $('#edStatus').textContent = 'Saving…';
+      try {
+        await api(`/api/upload?session=${encodeURIComponent(ed.id)}&name=strip.jpg&edited=1&picks=${encodeURIComponent(JSON.stringify(ed.picks))}`, { body: ed.blob, type: 'image/jpeg' });
+        if (copies) await api('/api/admin/reprint', { json: { sessionId: ed.id, copies } });
+        $('#edStatus').className = 'status ok';
+        $('#edStatus').textContent = copies ? `Saved, and ${copies} ${copies === 1 ? 'copy' : 'copies'} sent to the printer.` : 'Saved. The gallery and the QR download now show this strip.';
+        $('#edRestore').hidden = false;
+        load();
+      } catch (e) { $('#edStatus').textContent = e.message; }
+      finally { $('#edSave').disabled = $('#edSavePrint').disabled = false; }
+    }
+    document.addEventListener('click', async (e) => {
+      const t = e.target.closest('#ed .row button');
+      if (t) {
+        const slot = +t.parentElement.dataset.slot;
+        $$('button', t.parentElement).forEach(b => b.classList.toggle('on', b === t));
+        ed.picks[slot] = t.dataset.file; rebuild(); return;
+      }
+      const ebtn = e.target.closest('.edit');
+      if (ebtn) { ebtn.disabled = true; try { await openEditor(ebtn.closest('.s').dataset.id); } catch (err) { alert(err.message); } finally { ebtn.disabled = false; } return; }
+      if (e.target.closest('#edSave')) return save(0);
+      if (e.target.closest('#edSavePrint')) return save(Number($('#edCopies').value));
+      if (e.target.closest('#edRestore')) {
+        try { await api('/api/admin/restore-strip', { json: { sessionId: ed.id } }); load(); openEditor(ed.id); $('#edStatus').textContent = ''; } catch (err) { $('#edStatus').textContent = err.message; }
+        return;
+      }
+      if (e.target.closest('#edClose')) { $('#ed').hidden = true; document.body.style.overflow = ''; ed = null; }
+    });
 
     document.addEventListener('click', async (e) => {
-      const b = e.target.closest('.print .btn'); if (!b) return;
+      const b = e.target.closest('.s .print .btn'); if (!b) return;
       const card = b.closest('.s'), status = $('.status', card);
       const copies = Number($('select', card).value);
       b.disabled = true; status.className = 'status'; status.textContent = 'Sending to printer…';

@@ -1203,6 +1203,13 @@ async function route(req, res) {
     if (buf.length < 100 || buf[0] !== 0xff || buf[1] !== 0xd8) return json(res, 400, { ok: false, error: 'Not a JPEG' });
     const dest = path.join(sessionDir(sid), name);
     await fsp.mkdir(path.dirname(dest), { recursive: true });
+    if (name === 'strip.jpg' && url.searchParams.get('edited') === '1') {
+      const orig = path.join(sessionDir(sid), 'strip_original.jpg');
+      if (!fs.existsSync(orig) && fs.existsSync(dest)) await fsp.copyFile(dest, orig);
+      let picks = []; try { picks = JSON.parse(url.searchParams.get('picks') || '[]').map(v => str(v, 80)).slice(0, 4); } catch (_) {}
+      updateMetaFor(sid, m => ({ stripEdited: { at: new Date().toISOString(), photos: picks } }));
+      log('Strip edited for', sid, picks.join(', '));
+    }
     await fsp.writeFile(dest, buf);
     return json(res, 200, { ok: true, url: sessionUrl(sid, name) });
   }
@@ -1246,7 +1253,7 @@ async function route(req, res) {
     if (!adminAllowed(req)) return forbidden(res);
     const body = await readJson(req);
     const line = String(body.line || '').trim();
-    if (!/^(ROOM|FLASH|PULSE|STRIP|BREATHE|OFF|PING|LEDS)( \d{1,5}){0,5}$/.test(line)) return json(res, 400, { ok: false, error: 'Not a lights command' });
+    if (!/^(ROOM|FLASH|PULSE|STRIP|BREATHE|OFF|PING|LEDS|NEON|NEONINV|FLASHINV)( \d{1,5}){0,5}$/.test(line)) return json(res, 400, { ok: false, error: 'Not a lights command' });
     if (!lights.status.connected) return json(res, 409, { ok: false, error: 'The lights aren’t connected.' });
     lights.send(line);
     return json(res, 200, { ok: true });
@@ -1396,6 +1403,36 @@ async function route(req, res) {
   if (p === '/api/admin/reset-prints' && req.method === 'POST') { printCounter = { total: 0 }; addPrints(0); broadcastStatus(); return json(res, 200, { ok: true }); }
   if (p === '/api/admin/cancel' && req.method === 'POST') { resetToIdle('Session cancelled by staff.'); return json(res, 200, { ok: true }); }
   if (p === '/api/status' && req.method === 'GET') return json(res, 200, statusPayload());
+  if (p === '/api/admin/session-photos' && req.method === 'GET') {
+    if (!adminAllowed(req)) return forbidden(res);
+    const sid = url.searchParams.get('id') || '';
+    if (!/^[\w-]+$/.test(sid) || !fs.existsSync(sessionDir(sid))) return json(res, 404, { ok: false, error: 'Unknown session' });
+    const dir = sessionDir(sid);
+    const ls = async d => { try { return (await fsp.readdir(path.join(dir, d))).sort(); } catch (_) { return []; } };
+    const top = await ls(''), cands = await ls('candidates');
+    let meta = {}; try { meta = JSON.parse(await fsp.readFile(path.join(dir, 'session.json'), 'utf8')); } catch (_) {}
+    const base = u => (u ? String(u).split('?')[0].split('/').pop() : null);
+    const slots = [1, 2, 3].map(n => {
+      const files = [...(top.includes(`photo${n}.jpg`) ? [`photo${n}.jpg`] : []), ...cands.filter(f => new RegExp(`^photo${n}_\\d{2}\\.jpg$`).test(f)).map(f => 'candidates/' + f)];
+      const edited = meta.stripEdited && meta.stripEdited.photos && meta.stripEdited.photos[n - 1];
+      return { files, current: files.includes(edited) ? edited : files[0] || null };
+    });
+    const reactions = top.filter(f => /^reaction_\d{2}\.jpg$/.test(f));
+    const editedR = meta.stripEdited && meta.stripEdited.photos && meta.stripEdited.photos[3];
+    const metaR = base(meta.photos && meta.photos[3]) || (meta.selected >= 0 && meta.reactions && meta.reactions[meta.selected] ? base(meta.reactions[meta.selected].url) : null) || meta.autoSelectedReaction;
+    slots.push({ files: reactions, current: reactions.includes(editedR) ? editedR : reactions.includes(metaR) ? metaR : reactions[0] || null });
+    return json(res, 200, { ok: true, id: sid, base: sessionUrl(sid, ''), slots, hasOriginal: top.includes('strip_original.jpg') });
+  }
+  if (p === '/api/admin/restore-strip' && req.method === 'POST') {
+    if (!adminAllowed(req)) return forbidden(res);
+    const sid = String((await readJson(req)).sessionId || '');
+    const orig = path.join(sessionDir(sid), 'strip_original.jpg');
+    if (!/^[\w-]+$/.test(sid) || !fs.existsSync(orig)) return json(res, 404, { ok: false, error: 'No original strip saved for that session.' });
+    await fsp.copyFile(orig, path.join(sessionDir(sid), 'strip.jpg'));
+    updateMetaFor(sid, m => ({ stripEdited: null }));
+    log('Strip restored to the original for', sid);
+    return json(res, 200, { ok: true });
+  }
   if (p === '/api/sessions' && req.method === 'GET') {
     const ids = (await fsp.readdir(SESSIONS_DIR)).filter(f => /^[\w-]+$/.test(f)).sort().reverse().slice(0, 300);
     const out = [];
@@ -1442,7 +1479,7 @@ function serveShare(req, res, url, p) {
   if (!/^(strip|photo[1-3]|reaction_\d{2})\.jpg$/.test(file)) return notFound(res);
   const slug = String(settings.strip.title || 'ScareBooth').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'ScareBooth';
   const dl = url.searchParams.get('download') ? `${slug}_${sid.slice(0, 10)}_${file}` : null;
-  return serveFile(req, res, path.join(sessionDir(sid), file), { download: dl, cache: 'private, max-age=3600' });
+  return serveFile(req, res, path.join(sessionDir(sid), file), { download: dl, cache: file === 'strip.jpg' ? 'no-cache' : 'private, max-age=3600' });
 }
 
 function htmlEsc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }

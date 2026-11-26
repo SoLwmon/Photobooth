@@ -475,7 +475,8 @@
       // H.264 MP4 plays everywhere (Windows Photos, phones); fall back to WebM (open with Chrome or VLC)
       const type = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E,opus', 'video/mp4;codecs=avc1', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
         .find(t => MediaRecorder.isTypeSupported(t));
-      const mr = new MediaRecorder(new MediaStream(tracks), { mimeType: type, videoBitsPerSecond: (R.videoKbps || 4000) * 1000, audioBitsPerSecond: 128000 });
+      // a full picture (keyframe) every second, so skipping / fast-forwarding in a video player doesn't smear the picture
+      const mr = new MediaRecorder(new MediaStream(tracks), { mimeType: type, videoBitsPerSecond: (R.videoKbps || 4000) * 1000, audioBitsPerSecond: 128000, videoKeyFrameIntervalDuration: 1000 });
       rec.mr = mr; rec.sessionId = sessionId; rec.seq = 0; rec.ext = /mp4/.test(type || '') ? 'mp4' : 'webm';
       const sid = sessionId, ext = rec.ext;
       mr.ondataavailable = (e) => {
