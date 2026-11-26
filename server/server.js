@@ -52,6 +52,7 @@ const BUILTIN_SCARES = [
   { id: 'builtin/pale-lady-greenscreen.mp4', name: 'Pale Lady lunge (built-in green-screen MP4 — chroma key test)', url: '/assets/scares/pale-lady-greenscreen.mp4', kind: 'video', builtin: true },
   { id: 'builtin/pale-lady-alpha.webm', name: 'Pale Lady lunge (built-in transparent WebM)', url: '/assets/scares/pale-lady-alpha.webm', kind: 'video', builtin: true },
   { id: 'builtin/till-death-scare.mp4', name: 'Till Death Do Us Part scare (the booth’s own clip)', url: '/assets/scares/till-death-scare.mp4', kind: 'video', builtin: true },
+  { id: 'builtin/booth-scare.mp4', name: 'Booth scare (“Trythisone”, the event clip)', url: '/assets/scares/booth-scare.mp4', kind: 'video', builtin: true },
 ];
 
 function defaultProfile(id) {
@@ -96,8 +97,8 @@ const THEME_PRESETS = {
       ],
     },
     instructions: {
-      en: '# Welcome to the Couple’s Photo Booth!\nTo get the best out of your session, follow these quick steps:\n1. You’ll see 5 relationship questions pop up on screen. Answer them out loud to test your chemistry and see who really knows who best!\n2. After each question, look up at the camera above. A 3-2-1 countdown will begin before each snap.\n3. Once your final photo is taken, head outside to the print table to pick up your complimentary photo strip!\n! ANSWER OUT LOUD!\n[ TAP TO START ]',
-      zh: '# 欢迎来到情侣拍照亭！\n为了让你们玩得尽兴，请按照以下简单步骤：\n1. 屏幕上会出现 5 个关于你们感情的问题。请大声回答，测试你们的默契，看看谁才是最懂对方的人！\n2. 每个问题之后，请抬头看上方的相机。每次拍照前都会有 3-2-1 倒数。\n3. 拍完最后一张照片后，请到外面的打印台领取你们的免费照片条！\n! 大声回答！\n[ 点击开始 ]',
+      en: '# Welcome to the Couple’s Photo Booth!\nTo get the best out of your session, follow these quick steps:\n1. You’ll see 5 relationship questions pop up on screen. Answer them out loud to test your chemistry and see who really knows who best!\n2. After each question, look up at the camera above. A 3-2-1 countdown will begin before each snap.\n3. Once your final photo is taken, head outside to the print table to pick up your complimentary photo strip!\n! ANSWER OUT LOUD!\n[ TAP THE IPAD TO START ]',
+      zh: '# 欢迎来到情侣拍照亭！\n为了让你们玩得尽兴，请按照以下简单步骤：\n1. 屏幕上会出现 5 个关于你们感情的问题。请大声回答，测试你们的默契，看看谁才是最懂对方的人！\n2. 每个问题之后，请抬头看上方的相机。每次拍照前都会有 3-2-1 倒数。\n3. 拍完最后一张照片后，请到外面的打印台领取你们的免费照片条！\n! 大声回答！\n[ 点击 iPad 开始 ]',
     },
   },
   horror: {
@@ -163,13 +164,13 @@ const DEFAULT_SETTINGS = {
   instructions: { ...THEME_PRESETS.romance.instructions },
   timing: {
     answerSec: 6, countdownSec: 3, // fallbacks; each question has its own time below
-    answerSecs: [8, 6, 6, 15, 15], countdownSecs: [3, 3, 3, 3, 3], // per question (5): time to answer, then countdown (none on question 1)
+    answerSecs: [15, 15, 30, 30, 30], countdownSecs: [3, 3, 3, 3, 3], // per question (5): time to answer, then countdown (none on question 1)
     introTimeoutSec: 90, // instructions screen: back to the start if nobody presses Start
     shotBurstCount: 8, preFlashMs: 250, flashMs: 700, postFlashMs: 300, // photos 1–3: frames before/during/after the screen flash
     scareAtMinSec: 1.2, scareAtMaxSec: 2.6, scareBlackoutMs: 0, // final photo: scare strikes this many seconds into its countdown (random in range)
     scareOnNumber: 2, scareIntoNumberMs: 300, // …or on a countdown number: 2 = while “2” shows (0 = use the random range)
     burstCount: 10, burstDurationSec: 3, burstStartMs: 300, chooseTimeoutSec: 45, // scare photos: start 0.3 s after the scare appears (reactions take a moment)
-    shutterFlash: true, flashColor: 'black', doneTimeoutSec: 120, inactivityTimeoutSec: 180,
+    shutterFlash: false, flashColor: 'black', doneTimeoutSec: 120, inactivityTimeoutSec: 180,
   },
   flow: { chooseOnIpad: false, showWarning: false, linkFirstTwo: true }, // linkFirstTwo: questions 1 and 2 are Part 1 and Part 2 of one question
   record: { enabled: true, audio: true, micId: '', micLabel: '', videoKbps: 4000, size: '720p', keepCandidates: true },
@@ -182,9 +183,9 @@ const DEFAULT_SETTINGS = {
   wiz: { enabled: true, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
     idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
-  print: { enabled: false, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '',
+  print: { enabled: true, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '',
     offsetXmm: 0, offsetYmm: 0, scalePct: 100 }, // print position fine-tuning: + moves right / down (mm); size in %
-  scares: { active: 'builtin/till-death-scare.mp4', profiles: { 'builtin/till-death-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.022, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8} } },
+  scares: { active: 'builtin/booth-scare.mp4', profiles: { 'builtin/booth-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.013, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8}, 'builtin/till-death-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.022, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8} } },
   strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, bottomLogo: true, style: 'template', jpegQuality: 0.92 },
   warning: {
     text: 'This booth contains sudden frightening images and loud sounds. It is not recommended for anyone with heart conditions, anxiety, or sensitivity to sudden noise or startling visuals. Photos are stored on this computer only.',
@@ -339,7 +340,7 @@ function sanitizeSettings(s) {
       offsetXmm: Math.round(clamp(m.print.offsetXmm, -15, 15, 0) * 2) / 2, offsetYmm: Math.round(clamp(m.print.offsetYmm, -15, 15, 0) * 2) / 2,
       scalePct: Math.round(clamp(m.print.scalePct, 85, 110, 100) * 2) / 2,
     },
-    scares: { active: str(m.scares.active, 300, 'builtin/till-death-scare.mp4'), profiles: {} },
+    scares: { active: str(m.scares.active, 300, 'builtin/booth-scare.mp4'), profiles: {} },
     strip: {
       title: str(m.strip.title, 40, 'Till Death Do Us Part'), footer: str(m.strip.footer, 80, ''),
       showDate: bool(m.strip.showDate, true), bottomLogo: bool(m.strip.bottomLogo, true), style: ['template', 'theme', 'romance', 'dark'].includes(m.strip.style) ? m.strip.style : 'template', jpegQuality: clamp(m.strip.jpegQuality, 0.6, 1, 0.92),

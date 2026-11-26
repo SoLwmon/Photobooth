@@ -156,7 +156,7 @@
     },
     zh: {
       chooseLang: '请选择语言', english: 'English', chinese: '中文',
-      pressStart: '请在 iPad 上按“开始”', pickLang: '请在 iPad 上选择语言开始',
+      pressStart: '点击 iPad 开始', pickLang: '请在 iPad 上选择语言开始',
       howItWorks: '玩法说明', start: '开始', back: '返回', readBigScreen: '请看大屏幕上的玩法说明',
       readyWhenYouAre: '准备好了就按“开始”', introDisplayCta: '准备好了，请在 iPad 上按“开始”',
       question: '第 {n} 题 / 共 {total} 题', answerNow: '请回答……', questionPart: '第 {n} 题 / 共 {total} 题 · 第{p}部分', strikePose: '摆个姿势吧！',

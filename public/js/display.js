@@ -225,7 +225,7 @@
       case 'idle':
         layerOn('attract');
         $('#attractLine').textContent = SB.themeText('attractLine', 'en') + '\n' + SB.themeText('attractLine', 'zh');
-        $('#attractCta').textContent = SB.tr('pressStart', 'both');
+        $('#attractCta').innerHTML = `<span class="l-en">${SB.esc(SB.tr('pressStart', 'en'))}</span><span class="l-zh">${SB.esc(SB.tr('pressStart', 'zh'))}</span>`;
         break;
       case 'intro': {
         const ins = SB.instructionsHtml(settings && settings.instructions, lang);
