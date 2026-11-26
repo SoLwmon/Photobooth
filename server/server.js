@@ -184,7 +184,8 @@ const DEFAULT_SETTINGS = {
     idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
   print: { enabled: true, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '',
-    offsetXmm: 0, offsetYmm: 0, scalePct: 100, safeMm: 2.5 }, // print position fine-tuning: + moves right / down (mm); size in %
+    offsetXmm: 0, offsetYmm: 0, scalePct: 100, safeMm: 2.5,
+    leftXmm: 0, leftYmm: 0, leftScalePct: 100, rightXmm: 0, rightYmm: 0, rightScalePct: 100 }, // each strip on its own // print position fine-tuning: + moves right / down (mm); size in %
   scares: { active: 'builtin/booth-scare.mp4', profiles: { 'builtin/booth-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.013, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8}, 'builtin/till-death-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.022, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8} } },
   strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, bottomLogo: true, style: 'template', jpegQuality: 0.92 },
   warning: {
@@ -340,6 +341,10 @@ function sanitizeSettings(s) {
       offsetXmm: Math.round(clamp(m.print.offsetXmm, -15, 15, 0) * 2) / 2, offsetYmm: Math.round(clamp(m.print.offsetYmm, -15, 15, 0) * 2) / 2,
       scalePct: Math.round(clamp(m.print.scalePct, 85, 110, 100) * 2) / 2,
       safeMm: Math.round(clamp(m.print.safeMm, 0, 6, 2.5) * 2) / 2,
+      ...Object.fromEntries(['left', 'right'].flatMap(k => [
+        [k + 'Xmm', Math.round(clamp(m.print[k + 'Xmm'], -10, 10, 0) * 4) / 4],
+        [k + 'Ymm', Math.round(clamp(m.print[k + 'Ymm'], -10, 10, 0) * 4) / 4],
+        [k + 'ScalePct', Math.round(clamp(m.print[k + 'ScalePct'], 90, 105, 100) * 2) / 2]])),
     },
     scares: { active: str(m.scares.active, 300, 'builtin/booth-scare.mp4'), profiles: {} },
     strip: {
@@ -805,7 +810,9 @@ function directPrint(imagePath, copies, layout, jobName, opts = {}) {
     const P = settings.print;
     const out = await runPowerShell('print-strip.ps1', ['-Image', imagePath, '-Printer', P.printerName || '', '-Layout', layout, '-Sheets', String(sheets), '-JobName', jobName || 'ScareBooth',
       '-OffsetXmm', String(P.offsetXmm || 0), '-OffsetYmm', String(P.offsetYmm || 0), '-ScalePct', String(P.scalePct || 100),
-      '-SafeMm', String(opts.noSafe ? 0 : P.safeMm || 0)], 60000 + sheets * 20000);
+      '-SafeMm', String(opts.noSafe ? 0 : P.safeMm || 0),
+      '-LeftXmm', String(P.leftXmm || 0), '-LeftYmm', String(P.leftYmm || 0), '-LeftScalePct', String(P.leftScalePct || 100),
+      '-RightXmm', String(P.rightXmm || 0), '-RightYmm', String(P.rightYmm || 0), '-RightScalePct', String(P.rightScalePct || 100)], 60000 + sheets * 20000);
     if (!/^OK/m.test(out)) throw new Error((out.match(/ERROR: (.*)/) || [])[1] || out || 'Printing failed');
     log('Printed', sheets, 'sheet(s) on', out.replace(/^OK\s*/, ''));
     return sheets;

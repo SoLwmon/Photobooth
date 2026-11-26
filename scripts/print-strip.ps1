@@ -12,7 +12,12 @@ param(
   # Safe margin: borderless printers trim about 1-2 mm off every edge. The strip is shrunk just enough to keep
   # this many mm clear at the top and bottom, and the thin gap is filled with a blurred copy of the strip
   # (so there are no white lines). 0 = off.
-  [double]$SafeMm = 0
+  [double]$SafeMm = 0,
+  # Each strip on its own (4x6-double: left = the strip on the left half, right = the right half; other layouts use
+  # the left values). Moves in mm (+ = right / down) and size in %, around the strip's own centre. A strip never
+  # crosses the printer's middle cut: it is clipped to its own half, and any gap is filled with the blurred copy.
+  [double]$LeftXmm = 0, [double]$LeftYmm = 0, [double]$LeftScalePct = 100,
+  [double]$RightXmm = 0, [double]$RightYmm = 0, [double]$RightScalePct = 100
 )
 # Sends a ScareBooth strip straight to a Windows printer (no dialog, no browser).
 # Prints "OK <printer name>" on success, or "ERROR: <reason>" and exits 1.
@@ -24,7 +29,8 @@ try {
   # a very small copy of the strip: drawn stretched it becomes a soft blur used to fill the safe margin
   $script:blur = $null
   $script:blurAttr = $null
-  if ($SafeMm -gt 0) {
+  $perStrip = ($LeftXmm -ne 0) -or ($LeftYmm -ne 0) -or ($LeftScalePct -ne 100) -or ($RightXmm -ne 0) -or ($RightYmm -ne 0) -or ($RightScalePct -ne 100)
+  if (($SafeMm -gt 0) -or $perStrip) {
     $script:blur = New-Object System.Drawing.Bitmap 16, 48
     $bg = [System.Drawing.Graphics]::FromImage($script:blur)
     $bg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
@@ -95,19 +101,24 @@ try {
       '4x6-single' { $sw = $H / 3; $rects = @((New-Object System.Drawing.RectangleF((($W - $sw) / 2), 0, $sw, $H))) }
       default      { $rects = @((New-Object System.Drawing.RectangleF(0, 0, $W, $H))) }
     }
-    foreach ($r in $rects) {
-      if ($script:blur) {
-        # 1) soft background over the whole strip area
-        $dest = New-Object System.Drawing.Rectangle ([int][math]::Floor($r.X)), ([int][math]::Floor($r.Y)), ([int][math]::Ceiling($r.Width)), ([int][math]::Ceiling($r.Height))
-        $g.DrawImage($script:blur, $dest, 0, 0, 16, 48, [System.Drawing.GraphicsUnit]::Pixel, $script:blurAttr)
-        # 2) the sharp strip, shrunk around its centre so $SafeMm stays clear at top and bottom (same shape)
-        $m = [single]($SafeMm / 25.4 * 100)
-        $s = [single](($r.Height - 2 * $m) / $r.Height)
-        $iw = $r.Width * $s; $ih = $r.Height * $s
-        $g.DrawImage($script:img, (New-Object System.Drawing.RectangleF(($r.X + ($r.Width - $iw) / 2), ($r.Y + ($r.Height - $ih) / 2), $iw, $ih)))
-      } else {
-        $g.DrawImage($script:img, $r)
-      }
+    $mmU = [single](100 / 25.4)   # 1 mm in page units (1/100 inch)
+    for ($i = 0; $i -lt $rects.Count; $i++) {
+      $r = $rects[$i]
+      if (-not $script:blur) { $g.DrawImage($script:img, $r); continue }
+      if ($i -eq 0) { $dx = $LeftXmm; $dy = $LeftYmm; $sp = $LeftScalePct } else { $dx = $RightXmm; $dy = $RightYmm; $sp = $RightScalePct }
+      $state = $g.Save()
+      $g.SetClip($r)   # this strip stays on its own half of the sheet
+      # 1) soft background over the whole strip area
+      $dest = New-Object System.Drawing.Rectangle ([int][math]::Floor($r.X)), ([int][math]::Floor($r.Y)), ([int][math]::Ceiling($r.Width)), ([int][math]::Ceiling($r.Height))
+      $g.DrawImage($script:blur, $dest, 0, 0, 16, 48, [System.Drawing.GraphicsUnit]::Pixel, $script:blurAttr)
+      # 2) the sharp strip: shrunk so $SafeMm stays clear at top and bottom (same shape), then this strip's own size and move
+      $m = [single]([math]::Max(0, $SafeMm) * $mmU)
+      $s = [single](($r.Height - 2 * $m) / $r.Height) * [single]($sp / 100.0)
+      $iw = $r.Width * $s; $ih = $r.Height * $s
+      $x = $r.X + ($r.Width - $iw) / 2 + [single]($dx * $mmU)
+      $y = $r.Y + ($r.Height - $ih) / 2 + [single]($dy * $mmU)
+      $g.DrawImage($script:img, (New-Object System.Drawing.RectangleF($x, $y, $iw, $ih)))
+      $g.Restore($state)
     }
     $script:remaining--
     $e.HasMorePages = ($script:remaining -gt 0)
