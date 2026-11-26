@@ -1,7 +1,7 @@
 param([int]$Port = 8080)
 # Waits for the ScareBooth server, then opens:
-#   - the booth display in a full-screen kiosk window (Chrome or Edge) with camera + sound pre-approved
 #   - the operator console in the default browser
+#   - (only if SCAREBOOTH_AUTO_DISPLAY=1) the booth display in a full-screen kiosk window
 $ErrorActionPreference = 'SilentlyContinue'
 $base = "http://localhost:$Port"
 
@@ -15,6 +15,11 @@ if (-not $up) {
   [System.Windows.MessageBox]::Show("The ScareBooth server didn't answer on port $Port. Look at the black ScareBooth server window for the error. If it says the port is already in use, ScareBooth is already running: close every ScareBooth window (and any 'node' in Task Manager), then start it once.", "ScareBooth") | Out-Null
   exit 1
 }
+
+# Only the operator console opens. The booth display is NOT opened automatically any more:
+# open http://localhost:<port>/display yourself (e.g. in Brave on the TV, F11 for full screen).
+# To have ScareBooth open the full-screen kiosk display again, set SCAREBOOTH_AUTO_DISPLAY=1 in start-scarebooth.bat.
+if ($env:SCAREBOOTH_AUTO_DISPLAY -ne '1') { Start-Process "$base/admin"; exit 0 }
 
 # A display window is already connected (ScareBooth was started twice): just open the console.
 try {

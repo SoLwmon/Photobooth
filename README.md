@@ -38,13 +38,13 @@ Switching theme also swaps the title, questions and strip footer to that theme's
 
 ## 2. Starting the booth
 
-Double-click **`start-scarebooth.bat`**. It does three things:
+Double-click **`start-scarebooth.bat`**. It does two things:
 
 - It starts the server in a console window. **Keep that window open.** It prints the iPad address.
-- It opens the **booth display** full-screen on the main monitor. The camera and sound are approved automatically.
 - It opens the **operator console** (`http://localhost:8080/admin`) in your normal browser.
 
-To close the full-screen display, press **Alt + F4**. To stop the server, close its console window or press **Ctrl + C** in it.
+Open the **booth display** yourself on the TV: go to `http://localhost:8080/display` in your browser (for example Brave), allow the camera and microphone, click the page once so sound can play, and press **F11** for full screen.
+If you want ScareBooth to open the display full-screen (kiosk mode) by itself, set `SCAREBOOTH_AUTO_DISPLAY=1` at the top of `start-scarebooth.bat`; press **Alt + F4** to close that window. To stop the server, close its console window or press **Ctrl + C** in it.
 
 ### On the iPad
 

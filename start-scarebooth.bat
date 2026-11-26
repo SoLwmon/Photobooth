@@ -7,7 +7,7 @@ rem ---------------------------------------------------------------------------
 rem  ScareBooth launcher
 rem   1. checks Node.js
 rem   2. starts the local server
-rem   3. opens the booth display full-screen (kiosk) and the operator console
+rem   3. opens the operator console (open the booth display yourself at /display)
 rem
 rem  Optional settings (edit here, or set them before running):
 rem    PORT                    web port (default 8080)
@@ -15,6 +15,8 @@ rem    SCAREBOOTH_DISPLAY_POS  "x,y" desktop position of the booth monitor, e.g.
 rem                            (leave empty to use the main Windows display)
 rem    SCAREBOOTH_BROWSER      chrome | edge   (default: Chrome if installed, else Edge)
 rem    SCAREBOOTH_NO_KIOSK     set to 1 to open the display in a normal window
+rem    SCAREBOOTH_AUTO_DISPLAY set to 1 to open the booth display full-screen automatically
+rem                            (default: off - only the console opens; open /display yourself)
 rem ---------------------------------------------------------------------------
 if "%PORT%"=="" set PORT=8080
 
