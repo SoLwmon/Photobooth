@@ -404,6 +404,7 @@
           <div><label class="small">Move up / down (mm, − = up)</label><input type="number" min="-15" max="15" step="0.5" data-path="print.offsetYmm"></div>
           <div><label class="small">Move left / right (mm, − = left)</label><input type="number" min="-15" max="15" step="0.5" data-path="print.offsetXmm"></div>
           <div><label class="small">Size (%)</label><input type="number" min="85" max="110" step="0.5" data-path="print.scalePct"></div>
+          <div><label class="small">Safe margin top &amp; bottom (mm) <span class="muted">— keeps text away from the edges the printer trims; 0 = off</span></label><input type="number" min="0" max="6" step="0.5" data-path="print.safeMm"></div>
         </div>
         <p class="muted small">Press <b>📏 Alignment test</b>: it prints coloured frames 1 mm apart on every edge. On each edge, read the number of the first frame you can see fully. <b>Top and bottom should match</b> — if the top shows <b>0</b> and the bottom <b>3</b>, the picture is 1.5 mm too low: set <b>Move up/down</b> to <b>−1.5</b>. Same for left/right. If both ends are cut, lower <b>Size</b> to about <b>97</b>.</p>
       </div>

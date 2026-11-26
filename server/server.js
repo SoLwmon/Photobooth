@@ -184,7 +184,7 @@ const DEFAULT_SETTINGS = {
     idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
   print: { enabled: true, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '',
-    offsetXmm: 0, offsetYmm: 0, scalePct: 100 }, // print position fine-tuning: + moves right / down (mm); size in %
+    offsetXmm: 0, offsetYmm: 0, scalePct: 100, safeMm: 2.5 }, // print position fine-tuning: + moves right / down (mm); size in %
   scares: { active: 'builtin/booth-scare.mp4', profiles: { 'builtin/booth-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.013, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8}, 'builtin/till-death-scare.mp4': {"placement": {"x": 0.498, "y": 0.501, "scale": 1.022, "flip": false}, "chroma": {"enabled": false, "color": "#00ff00", "similarity": 0.3, "smoothness": 0.1, "spill": 0.55}, "edgeFeather": 0, "entrance": "none", "holdSec": 2.6, "fadeOutMs": 400, "maxVideoSec": 8} } },
   strip: { title: THEME_PRESETS.romance.title, footer: THEME_PRESETS.romance.footer, showDate: true, bottomLogo: true, style: 'template', jpegQuality: 0.92 },
   warning: {
@@ -339,6 +339,7 @@ function sanitizeSettings(s) {
       printerName: str(m.print.printerName, 200),
       offsetXmm: Math.round(clamp(m.print.offsetXmm, -15, 15, 0) * 2) / 2, offsetYmm: Math.round(clamp(m.print.offsetYmm, -15, 15, 0) * 2) / 2,
       scalePct: Math.round(clamp(m.print.scalePct, 85, 110, 100) * 2) / 2,
+      safeMm: Math.round(clamp(m.print.safeMm, 0, 6, 2.5) * 2) / 2,
     },
     scares: { active: str(m.scares.active, 300, 'builtin/booth-scare.mp4'), profiles: {} },
     strip: {
@@ -798,12 +799,13 @@ function runPowerShell(script, args, timeoutMs) {
 // stripsPerPrint 2 → each print is a whole sheet (2 strips); 1 → strips are counted singly (3 prints = 2 sheets).
 function perSheet(layout) { return layout === '4x6-double' && settings.print.stripsPerPrint === 1 ? 2 : 1; }
 /** Queue a direct print job; resolves with the number of sheets printed. */
-function directPrint(imagePath, copies, layout, jobName) {
+function directPrint(imagePath, copies, layout, jobName, opts = {}) {
   const sheets = Math.ceil(copies / perSheet(layout));
   const job = async () => {
     const P = settings.print;
     const out = await runPowerShell('print-strip.ps1', ['-Image', imagePath, '-Printer', P.printerName || '', '-Layout', layout, '-Sheets', String(sheets), '-JobName', jobName || 'ScareBooth',
-      '-OffsetXmm', String(P.offsetXmm || 0), '-OffsetYmm', String(P.offsetYmm || 0), '-ScalePct', String(P.scalePct || 100)], 60000 + sheets * 20000);
+      '-OffsetXmm', String(P.offsetXmm || 0), '-OffsetYmm', String(P.offsetYmm || 0), '-ScalePct', String(P.scalePct || 100),
+      '-SafeMm', String(opts.noSafe ? 0 : P.safeMm || 0)], 60000 + sheets * 20000);
     if (!/^OK/m.test(out)) throw new Error((out.match(/ERROR: (.*)/) || [])[1] || out || 'Printing failed');
     log('Printed', sheets, 'sheet(s) on', out.replace(/^OK\s*/, ''));
     return sheets;
@@ -1347,7 +1349,7 @@ async function route(req, res) {
     if (body.cmd === 'alignPrint') {
       // a strip with 1 mm frames on every edge, to measure how far the printer shifts / crops
       if (settings.print.method !== 'direct') return json(res, 200, { ok: false, error: 'The alignment print needs the “Print directly” method.' });
-      directPrint(path.join(PUBLIC_DIR, 'assets', 'align-strip.jpg'), perSheet(settings.print.layout), settings.print.layout, 'ScareBooth alignment test')
+      directPrint(path.join(PUBLIC_DIR, 'assets', 'align-strip.jpg'), perSheet(settings.print.layout), settings.print.layout, 'ScareBooth alignment test', { noSafe: true })
         .then(() => printNotice(true, 'Alignment test sent. On each edge, note the first coloured frame you can see fully.'))
         .catch(e => printNotice(false, 'Alignment print failed: ' + e.message));
       return json(res, 200, { ok: true });

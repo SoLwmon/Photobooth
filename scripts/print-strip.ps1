@@ -8,7 +8,11 @@ param(
   # + moves the picture right / down, in millimetres; ScalePct shrinks or grows it around the centre.
   [double]$OffsetXmm = 0,
   [double]$OffsetYmm = 0,
-  [double]$ScalePct = 100
+  [double]$ScalePct = 100,
+  # Safe margin: borderless printers trim about 1-2 mm off every edge. The strip is shrunk just enough to keep
+  # this many mm clear at the top and bottom, and the thin gap is filled with a blurred copy of the strip
+  # (so there are no white lines). 0 = off.
+  [double]$SafeMm = 0
 )
 # Sends a ScareBooth strip straight to a Windows printer (no dialog, no browser).
 # Prints "OK <printer name>" on success, or "ERROR: <reason>" and exits 1.
@@ -17,6 +21,18 @@ try {
   Add-Type -AssemblyName System.Drawing
   if (-not (Test-Path -LiteralPath $Image)) { throw "Image not found: $Image" }
   $script:img = [System.Drawing.Image]::FromFile((Resolve-Path -LiteralPath $Image).Path)
+  # a very small copy of the strip: drawn stretched it becomes a soft blur used to fill the safe margin
+  $script:blur = $null
+  $script:blurAttr = $null
+  if ($SafeMm -gt 0) {
+    $script:blur = New-Object System.Drawing.Bitmap 16, 48
+    $bg = [System.Drawing.Graphics]::FromImage($script:blur)
+    $bg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $bg.DrawImage($script:img, 0, 0, 16, 48)
+    $bg.Dispose()
+    $script:blurAttr = New-Object System.Drawing.Imaging.ImageAttributes
+    $script:blurAttr.SetWrapMode([System.Drawing.Drawing2D.WrapMode]::TileFlipXY)   # no dark fringe at the edges
+  }
 
   $doc = New-Object System.Drawing.Printing.PrintDocument
   $doc.DocumentName = $JobName
@@ -79,13 +95,27 @@ try {
       '4x6-single' { $sw = $H / 3; $rects = @((New-Object System.Drawing.RectangleF((($W - $sw) / 2), 0, $sw, $H))) }
       default      { $rects = @((New-Object System.Drawing.RectangleF(0, 0, $W, $H))) }
     }
-    foreach ($r in $rects) { $g.DrawImage($script:img, $r) }
+    foreach ($r in $rects) {
+      if ($script:blur) {
+        # 1) soft background over the whole strip area
+        $dest = New-Object System.Drawing.Rectangle ([int][math]::Floor($r.X)), ([int][math]::Floor($r.Y)), ([int][math]::Ceiling($r.Width)), ([int][math]::Ceiling($r.Height))
+        $g.DrawImage($script:blur, $dest, 0, 0, 16, 48, [System.Drawing.GraphicsUnit]::Pixel, $script:blurAttr)
+        # 2) the sharp strip, shrunk around its centre so $SafeMm stays clear at top and bottom (same shape)
+        $m = [single]($SafeMm / 25.4 * 100)
+        $s = [single](($r.Height - 2 * $m) / $r.Height)
+        $iw = $r.Width * $s; $ih = $r.Height * $s
+        $g.DrawImage($script:img, (New-Object System.Drawing.RectangleF(($r.X + ($r.Width - $iw) / 2), ($r.Y + ($r.Height - $ih) / 2), $iw, $ih)))
+      } else {
+        $g.DrawImage($script:img, $r)
+      }
+    }
     $script:remaining--
     $e.HasMorePages = ($script:remaining -gt 0)
   })
 
   $doc.Print()
   $script:img.Dispose()
+  if ($script:blur) { $script:blur.Dispose() }
   $paperName = '(driver default)'; if ($match) { $paperName = $match.PaperName }
   Write-Output ("OK " + $doc.PrinterSettings.PrinterName + " | paper: " + $paperName)
   exit 0
