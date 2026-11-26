@@ -183,7 +183,7 @@ const DEFAULT_SETTINGS = {
     flashMode: 'steady', flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300, scareFlashDelayMs: 1500,
   },
   wiz: { enabled: true, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
-    idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100 }, // 'white' = the bulb's own white LEDs (no purple tint)
+    idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100, scareDelayMs: 1500 }, // 'white' = the bulb's own white LEDs (no purple tint)
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
   print: { enabled: true, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '',
     offsetXmm: 0, offsetYmm: 0, scalePct: 100, safeMm: 2.5,
@@ -329,6 +329,7 @@ function sanitizeSettings(s) {
         idleColor: col(W.idleColor, '#ff4f8b'), sessionColor: col(W.sessionColor, '#ffc9a8'), scareColor: col(W.scareColor, '#ff0000'),
         idleMode: W.idleMode === 'color' ? 'color' : 'white', sessionMode: W.sessionMode === 'color' ? 'color' : 'white',
         scareBrightness: Math.round(clamp(W.scareBrightness, 10, 100, 100)),
+        scareDelayMs: Math.round(clamp(W.scareDelayMs, 0, 5000, 1500)),
         idleTemp: Math.round(clamp(W.idleTemp, 2200, 6500, 3500) / 100) * 100, sessionTemp: Math.round(clamp(W.sessionTemp, 2200, 6500, 2700) / 100) * 100,
       };
     })(),

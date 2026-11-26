@@ -134,6 +134,12 @@ class Wiz extends EventEmitter {
     if (!this.settings || !this.settings.wiz.enabled) return false;
     const W = this.settings.wiz;
     this.look.cue = name;
+    clearTimeout(this.scareTimer); // a pending (delayed) scare colour is cancelled by any newer cue
+    if (name === 'scare' && W.scareDelayMs > 0) {
+      // wait a moment after the scare starts, so the bulb turns red with the scream instead of before it
+      this.scareTimer = setTimeout(() => { if (this.look.cue === 'scare') this.setColor(W.scareColor, W.scareBrightness || 100); }, W.scareDelayMs);
+      return true;
+    }
     switch (name) {
       case 'idle': W.idleMode === 'color' ? this.setColor(W.idleColor, W.brightness) : this.setWhite(W.idleTemp, W.brightness); break;
       case 'session': W.sessionMode === 'color' ? this.setColor(W.sessionColor, W.brightness) : this.setWhite(W.sessionTemp, W.brightness); break;
