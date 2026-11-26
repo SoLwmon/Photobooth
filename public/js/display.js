@@ -223,6 +223,12 @@
     else if (!want && audio.musicPlaying && !musicTest) { audio.stopMusic(0.8); logRemote('Music stopped (' + state.phase + ')'); }
   }
   let musicTest = false;
+  // the music dips during each countdown and comes back once the photo is taken
+  function musicDuck(on) {
+    const m = settings && settings.music;
+    if (!m || !m.duckCountdown) { audio.duckMusic(false, 1, 0.3); return; }
+    if (on) audio.duckMusic(true, m.duckLevel || 0, 0.7); else audio.duckMusic(false, 1, 1.2);
+  }
   function musicAtScare() { musicDoneFor = state.sessionId; musicTest = false; if (audio.musicPlaying) logRemote('Music stopped at the jump scare'); audio.stopMusic(0.06); }
 
   // ------------------------------------------------------------------ UI per phase
@@ -628,6 +634,7 @@
     if (busy) { report({ type: 'failed', cmdId: cmd.cmdId, error: 'The display was busy.' }); return; }
     busy = true; const token = ++runToken;
     workingCmd = cmd.cmdId;
+    musicDuck(false); // (in case an earlier countdown was interrupted) the music plays while they answer
     if (previewOn) { renderer.setPreview(false); previewOn = false; document.body.classList.remove('previewing'); }
     const t = settings.timing;
     try {
@@ -658,11 +665,13 @@
           ? (countdownSec - onNum) * 1000 + (t.scareIntoNumberMs ?? 300)
           : (t.scareAtMinSec + Math.random() * (t.scareAtMaxSec - t.scareAtMinSec)) * 1000;
         const strikeAt = performance.now() + scareAtMs;
+        musicDuck(true); // countdown: the music fades out
         const interrupted = await countdown(countdownSec, token, strikeAt);
         if (!interrupted) {
           while (performance.now() < strikeAt) { await sleep(Math.min(15, strikeAt - performance.now())); check(token); }
         }
       } else {
+        musicDuck(true); // countdown: the music fades out
         await countdown(countdownSec, token);
       }
 
@@ -675,6 +684,7 @@
           if (settings.lights && settings.lights.flashOnPhotos) lightCue('flash', { ms: fl });
         }, pre);
         const frames = await captureBurst(n, pre + fl + post, t0, token);
+        musicDuck(false); // photo taken: the music comes back
         check(token);
         report({ type: 'shotDone', cmdId: cmd.cmdId, shot: cmd.shot });
         const shot = cmd.shot, sid = cmd.sessionId;
@@ -819,6 +829,7 @@
   }
 
   function abort() {
+    musicDuck(false);
     stopRecording();
     lightCue('session');
     runToken++;

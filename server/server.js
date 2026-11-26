@@ -156,7 +156,7 @@ const DEFAULT_SETTINGS = {
   camera: { deviceId: '', label: '', resolution: '1080p', mirrorPreview: true, mirrorSaved: false, demoMode: false, fit: 'cover', portraitLayout: 'window', rotation: 90 },
   sound: { volume: 0.85, useVideoAudio: true, sting: 'builtin' },
   // background music: starts after Start, loops, stops the moment the scare hits
-  music: { enabled: true, track: 'builtin', volume: 0.35, startAt: 'start' },
+  music: { enabled: true, track: 'builtin', volume: 0.35, startAt: 'start', duckCountdown: true, duckLevel: 0 },
   theme: { name: 'romance' },
   // the booth's own questions (saved from the event setup, v12)
   questions: {
@@ -258,6 +258,8 @@ function sanitizeSettings(s) {
       track: str((m.music || {}).track, 300, 'builtin') || 'builtin',
       volume: clamp((m.music || {}).volume, 0, 1, 0.35),
       startAt: (m.music || {}).startAt === 'questions' ? 'questions' : 'start',
+      duckCountdown: bool((m.music || {}).duckCountdown, true),
+      duckLevel: clamp((m.music || {}).duckLevel, 0, 1, 0),
     },
     // five questions in English and Chinese; older settings had four English ones (now questions 2–5)
     questions: (() => {

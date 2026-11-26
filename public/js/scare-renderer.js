@@ -151,11 +151,19 @@
       this.musicLevel = level;
       if (this.musicSrc) { this.musicGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.1); return true; }
       const t = this.ctx.currentTime;
+      this.musicDucked = false;
       const g = this.ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level, t + fadeSec); g.connect(this.master);
       const s = this.ctx.createBufferSource(); s.buffer = this.musicBuffer; s.loop = true; s.connect(g); s.start(t + 0.02);
       this.musicSrc = s; this.musicGain = g; return true;
     }
-    setMusicLevel(level) { this.musicLevel = level; if (this.musicGain) this.musicGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.1); }
+    setMusicLevel(level) { this.musicLevel = level; if (this.musicGain && !this.musicDucked) this.musicGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.1); }
+    /** Dip the music (e.g. during a countdown) to `to` × its level, or bring it back. */
+    duckMusic(on, to = 0, fadeSec = 0.6) {
+      this.musicDucked = !!on;
+      if (!this.musicGain) return;
+      const g = this.musicGain.gain, t = this.ctx.currentTime, target = on ? this.musicLevel * to : this.musicLevel;
+      g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(target, t + Math.max(0.02, fadeSec));
+    }
     stopMusic(fadeSec = 0.6) {
       if (!this.musicSrc) return;
       const s = this.musicSrc, g = this.musicGain, t = this.ctx.currentTime;
