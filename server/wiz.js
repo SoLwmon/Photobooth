@@ -133,8 +133,21 @@ class Wiz extends EventEmitter {
   cue(name) {
     if (!this.settings || !this.settings.wiz.enabled) return false;
     const W = this.settings.wiz;
+    const wasScare = this.look.cue === 'scare';
     this.look.cue = name;
     clearTimeout(this.scareTimer); // a pending (delayed) scare colour is cancelled by any newer cue
+    clearTimeout(this.holdTimer);
+    // after the scare the bulb stays red a while longer (Console → Lights: keep red longer)
+    const holdMs = this.settings.lights ? this.settings.lights.scareHoldMs || 0 : 0;
+    if (name === 'scare' || name === 'off') this.holdUntil = 0;
+    else if (wasScare && !this.holdUntil) this.holdUntil = Date.now() + holdMs;
+    const left = (this.holdUntil || 0) - Date.now();
+    if (left > 0 && (name === 'session' || name === 'idle')) {
+      this.look.cue = 'scare';
+      this.holdTimer = setTimeout(() => { this.holdUntil = 0; this.look.cue = name; this.cue(name); }, left);
+      return true;
+    }
+    if (name === 'session' || name === 'idle') this.holdUntil = 0;
     if (name === 'scare' && W.scareDelayMs > 0) {
       // wait a moment after the scare starts, so the bulb turns red with the scream instead of before it
       this.scareTimer = setTimeout(() => { if (this.look.cue === 'scare') this.setColor(W.scareColor, W.scareBrightness || 100); }, W.scareDelayMs);

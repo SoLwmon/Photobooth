@@ -156,7 +156,7 @@ const DEFAULT_SETTINGS = {
   camera: { deviceId: '', label: '', resolution: '1080p', mirrorPreview: true, mirrorSaved: false, demoMode: false, fit: 'cover', portraitLayout: 'window', rotation: 90 },
   sound: { volume: 0.85, useVideoAudio: true, sting: 'builtin', scareVolume: 1 }, // scareVolume: jump-scare sound, 1 = 100 %
   // background music: starts after Start, loops, stops the moment the scare hits
-  music: { enabled: true, track: 'builtin', volume: 0.35, duckCountdown: true, duckLevel: 0,
+  music: { enabled: false, track: 'builtin', volume: 0.35, duckCountdown: true, duckLevel: 0,
     // % of the music volume at each stage: waiting, instructions, questions 1–5, after the scare (QR screen)
     levels: { idle: 100, intro: 15, q1: 15, q2: 10, q3: 10, q4: 5, q5: 0, after: 100 } },
   theme: { name: 'romance' },
@@ -185,9 +185,10 @@ const DEFAULT_SETTINGS = {
     idleColor: '#ff4f8b', sessionColor: '#ffb3c9', scareColor: '#ff0000',
     neonIdle: 'white', neonSession: 'white', neonScare: 'red', neonInvR: true, neonInvG: false, neonInvB: true, flashInvert: false, // RGB neon on relays (pins 7/4/8)
     flashMode: 'steady', flashOnPhotos: false, scareFlashExtraMs: 400, revertDelayMs: 300, scareFlashDelayMs: 1500,
+    neonScareDelayMs: 500, scareHoldMs: 7000, // neon turns red this long after the scare; neon + bulb stay red this much longer
   },
   wiz: { enabled: true, bulbs: '', brightness: 80, idleColor: '#ff4f8b', sessionColor: '#ffc9a8', scareColor: '#ff0000',
-    idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100, scareDelayMs: 1500 }, // 'white' = the bulb's own white LEDs (no purple tint)
+    idleMode: 'white', idleTemp: 6500, sessionMode: 'white', sessionTemp: 6500, scareBrightness: 100, scareDelayMs: 500 }, // 'white' = the bulb's own white LEDs (no purple tint)
   share: { enabled: true, mode: 'auto', customUrl: '', host: '', wifiSsid: '', wifiPassword: '', wifiSecurity: 'WPA' },
   print: { enabled: true, askGuests: false, maxCopies: 4, layout: '4x6-double', stripsPerPrint: 2, timeoutCopies: 1, method: 'direct', printerName: '',
     offsetXmm: 0, offsetYmm: 0, scalePct: 100, safeMm: 2.5,
@@ -243,7 +244,7 @@ function sanitizeSettings(s) {
   const m = deepMerge(DEFAULT_SETTINGS, s || {});
   const t = m.timing;
   const out = {
-    version: 17,
+    version: 18,
     theme: { name: m.theme.name === 'horror' ? 'horror' : 'romance' },
     camera: {
       deviceId: str(m.camera.deviceId, 300), label: str(m.camera.label, 300),
@@ -259,7 +260,7 @@ function sanitizeSettings(s) {
       scareVolume: Math.round(clamp(m.sound.scareVolume, 0, 2, 1) * 100) / 100,
     },
     music: {
-      enabled: bool((m.music || {}).enabled, true),
+      enabled: bool((m.music || {}).enabled, false),
       track: str((m.music || {}).track, 300, 'builtin') || 'builtin',
       volume: clamp((m.music || {}).volume, 0, 1, 0.35),
       levels: Object.fromEntries(Object.entries({ idle: 100, intro: 15, q1: 15, q2: 10, q3: 10, q4: 5, q5: 0, after: 100 })
@@ -326,6 +327,7 @@ function sanitizeSettings(s) {
           return { neonIdle: c(L.neonIdle, 'white'), neonSession: c(L.neonSession, 'white'), neonScare: c(L.neonScare, 'red'),
             neonInvR: bool(L.neonInvR, true), neonInvG: bool(L.neonInvG, false), neonInvB: bool(L.neonInvB, true), flashInvert: bool(L.flashInvert, false) }; })(),
         flashMode: L.flashMode === 'flash' ? 'flash' : 'steady', flashOnPhotos: bool(L.flashOnPhotos, false), scareFlashExtraMs: Math.round(clamp(L.scareFlashExtraMs, 0, 5000, 400)), scareFlashDelayMs: Math.round(clamp(L.scareFlashDelayMs, 0, 5000, 1500)),
+        neonScareDelayMs: Math.round(clamp(L.neonScareDelayMs, 0, 5000, 500)), scareHoldMs: Math.round(clamp(L.scareHoldMs, 0, 30000, 7000)),
         revertDelayMs: Math.round(clamp(L.revertDelayMs, 0, 10000, 300)),
       };
     })(),
@@ -337,7 +339,7 @@ function sanitizeSettings(s) {
         idleColor: col(W.idleColor, '#ff4f8b'), sessionColor: col(W.sessionColor, '#ffc9a8'), scareColor: col(W.scareColor, '#ff0000'),
         idleMode: W.idleMode === 'color' ? 'color' : 'white', sessionMode: W.sessionMode === 'color' ? 'color' : 'white',
         scareBrightness: Math.round(clamp(W.scareBrightness, 10, 100, 100)),
-        scareDelayMs: Math.round(clamp(W.scareDelayMs, 0, 5000, 1500)),
+        scareDelayMs: Math.round(clamp(W.scareDelayMs, 0, 5000, 500)),
         idleTemp: Math.round(clamp(W.idleTemp, 2200, 6500, 3500) / 100) * 100, sessionTemp: Math.round(clamp(W.sessionTemp, 2200, 6500, 2700) / 100) * 100,
       };
     })(),
@@ -423,6 +425,12 @@ try {
   if (!raw.version || raw.version < 10) {
     // the rose-stained "Till Death Do Us Part" strip design
     raw.strip = raw.strip || {}; raw.strip.style = 'template';
+  }
+  if ((raw.version || 0) < 18) {
+    // Nov 27 tuning: music off for now; bulb red 1 s earlier; neon red 0.5 s after the scare; both stay red 7 s longer
+    raw.music = raw.music || {}; raw.music.enabled = false;
+    raw.wiz = raw.wiz || {}; raw.wiz.scareDelayMs = Math.max(0, (Number.isFinite(+raw.wiz.scareDelayMs) ? +raw.wiz.scareDelayMs : 1500) - 1000);
+    raw.lights = raw.lights || {}; raw.lights.neonScareDelayMs = 500; raw.lights.scareHoldMs = 7000;
   }
   if ((raw.version || 0) < 17) {
     // the booth's 1-channel green relay switches on with HIGH (the 2-channel red/blue board with LOW)

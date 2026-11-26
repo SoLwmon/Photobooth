@@ -254,6 +254,12 @@ class Lights extends EventEmitter {
   cue(name, opts = {}) {
     const L = this.settings.lights;
     clearTimeout(this.flashDelayTimer); // a new moment cancels a scare flash that hasn't fired yet
+    clearTimeout(this.neonTimer);       // …and a neon change that hasn't happened yet
+    // the neon follows the scare a little later (neonScareDelayMs) and stays red longer (scareHoldMs)
+    const neonLater = (colour, ms) => { if (ms > 0) this.neonTimer = setTimeout(() => this.neon(colour), ms); else this.neon(colour); };
+    if (name === 'scare' || name === 'off') this.neonHoldUntil = 0;
+    else if (this.look.cue === 'scare' && (name === 'session' || name === 'idle')) this.neonHoldUntil = Date.now() + (L.scareHoldMs || 0);
+    const hold = Math.max(0, (this.neonHoldUntil || 0) - Date.now()); // still inside the "stay red" time
     const bri = L.stripBrightness;
     const rgb = (h) => hex(h).join(' ');
     this.look.cue = name;
@@ -268,12 +274,12 @@ class Lights extends EventEmitter {
     };
     switch (name) {
       case 'idle':
-        this.neon(L.neonIdle);
+        neonLater(L.neonIdle, hold);
         room(!scareOnly); this.send(`FLASH ${steady ? L.flashLevel : 0}`);
         this.send(`BREATHE ${rgb(L.idleColor)} 4000 ${bri}`);
         break;
       case 'session':
-        this.neon(L.neonSession);
+        neonLater(L.neonSession, hold);
         room(!scareOnly); this.send(`FLASH ${steady ? L.flashLevel : 0}`);
         this.send(`STRIP ${rgb(L.sessionColor)} ${bri}`);
         break;
@@ -284,7 +290,7 @@ class Lights extends EventEmitter {
       case 'scare':
         // jump scare: room light off, LED strip red, flash device on for the reaction burst
         room(scareOnly);
-        this.neon(L.neonScare);
+        neonLater(L.neonScare, L.neonScareDelayMs || 0);
         this.send(`STRIP ${rgb(L.scareColor)} 255`);
         if (steady) { this.send(`FLASH ${L.flashLevel}`); break; } // stays on through the scare
         {
