@@ -25,6 +25,12 @@ const IS_WIN = process.platform === 'win32';
 const hex = (h) => { const n = parseInt(String(h || '#000000').slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 
 // ------------------------------------------------------------------ transports
+// RGB neon colours made from the three relays (red, green, blue each on/off)
+const NEON_COLOURS = {
+  off: [0, 0, 0], red: [1, 0, 0], green: [0, 1, 0], blue: [0, 0, 1],
+  yellow: [1, 1, 0], cyan: [0, 1, 1], magenta: [1, 0, 1], white: [1, 1, 1],
+};
+
 class SimulatorTransport extends EventEmitter {
   constructor() { super(); this.name = 'Simulator'; this.leds = 60; }
   open() { setTimeout(() => this.emit('open'), 20); }
@@ -35,7 +41,7 @@ class SimulatorTransport extends EventEmitter {
       case 'PING': return reply(`PONG SCAREBOOTH-LIGHTS 1 ${this.leds}`);
       case 'LEDS': this.leds = parseInt(a[0], 10) || this.leds; return reply('OK LEDS');
       case 'PULSE': reply('OK PULSE'); return setTimeout(() => this.emit('line', 'DONE PULSE'), parseInt(a[0], 10) || 0);
-      case 'ROOM': case 'FLASH': case 'STRIP': case 'BREATHE': case 'OFF': return reply('OK ' + cmd.toUpperCase());
+      case 'ROOM': case 'FLASH': case 'STRIP': case 'BREATHE': case 'OFF': case 'NEON': case 'NEONINV': return reply('OK ' + cmd.toUpperCase());
       default: return reply('ERR unknown command');
     }
   }
@@ -73,7 +79,7 @@ class Lights extends EventEmitter {
     this.log = log; this.scriptsDir = scriptsDir;
     this.t = null; this.settings = null;
     this.status = { enabled: false, connected: false, port: null, device: null, message: 'Lights are switched off in the console.' };
-    this.look = { room: 0, strip: [0, 0, 0], stripMode: 'off', flash: 0, cue: null };
+    this.look = { room: 0, strip: [0, 0, 0], stripMode: 'off', flash: 0, neon: [0, 0, 0], cue: null };
     this.pingTimer = null; this.reconnectTimer = null; this.lastPong = 0; this.pulseTimer = null;
   }
 
@@ -103,6 +109,8 @@ class Lights extends EventEmitter {
     const changed = !prev || !prev.lights.enabled || prev.lights.port !== L.port;
     if (changed) this.connect();
     else if (prev.lights.ledCount !== L.ledCount && this.status.connected) this.send(`LEDS ${L.ledCount}`);
+    if (!changed && this.status.connected && ['neonInvR', 'neonInvG', 'neonInvB'].some(k => prev.lights[k] !== L[k])) this.sendNeonInv();
+    if (!changed && this.status.connected && ['neonIdle', 'neonSession'].some(k => prev.lights[k] !== L[k]) && this.look && this.look.cue !== 'scare' && this.look.cue !== 'off') this.neon(this.look.cue === 'idle' ? L.neonIdle : L.neonSession);
     // steady COB light: a brightness / mode change shows straight away (not only at the next session)
     if (!changed && this.status.connected && (prev.lights.flashLevel !== L.flashLevel || prev.lights.flashMode !== L.flashMode)) {
       const cue = this.look && this.look.cue;
@@ -179,6 +187,7 @@ class Lights extends EventEmitter {
       t.write('PING');
     }, 5000);
     this.send(`LEDS ${this.settings.lights.ledCount}`);
+    this.sendNeonInv();
     this.emit('connected');
   }
 
@@ -198,7 +207,8 @@ class Lights extends EventEmitter {
     }
     if (cmd === 'STRIP') { this.look.strip = scaleRgb(n.slice(0, 3), n[3]); this.look.stripMode = 'solid'; }
     if (cmd === 'BREATHE') { this.look.strip = scaleRgb(n.slice(0, 3), n[4]); this.look.stripMode = 'breathe'; }
-    if (cmd === 'OFF') { this.look = { ...this.look, room: 0, flash: 0, strip: [0, 0, 0], stripMode: 'off' }; }
+    if (cmd === 'NEON') this.look.neon = n.slice(0, 3).map(v => (v ? 1 : 0));
+    if (cmd === 'OFF') { this.look = { ...this.look, room: 0, flash: 0, strip: [0, 0, 0], stripMode: 'off', neon: [0, 0, 0] }; }
     this.emit('change');
     if (this.t && this.status.connected) { this.t.write(line); this.expectOk(cmd, line); }
   }
@@ -228,6 +238,17 @@ class Lights extends EventEmitter {
     this.pending[cmd] = p;
   }
 
+  /** Which RGB-neon relays are "low-level trigger" (switch on with LOW). Saved on the Uno. */
+  sendNeonInv() {
+    const L = this.settings.lights;
+    this.send(`NEONINV ${L.neonInvR ? 1 : 0} ${L.neonInvG ? 1 : 0} ${L.neonInvB ? 1 : 0}`);
+  }
+  /** RGB neon on three relays: each colour is just on or off, so a colour is a mix of red / green / blue. */
+  neon(name) {
+    const bits = NEON_COLOURS[name] || NEON_COLOURS.off;
+    this.send(`NEON ${bits[0]} ${bits[1]} ${bits[2]}`);
+  }
+
   /** Named lighting moments used by the booth. */
   cue(name, opts = {}) {
     const L = this.settings.lights;
@@ -246,10 +267,12 @@ class Lights extends EventEmitter {
     };
     switch (name) {
       case 'idle':
+        this.neon(L.neonIdle);
         room(!scareOnly); this.send(`FLASH ${steady ? L.flashLevel : 0}`);
         this.send(`BREATHE ${rgb(L.idleColor)} 4000 ${bri}`);
         break;
       case 'session':
+        this.neon(L.neonSession);
         room(!scareOnly); this.send(`FLASH ${steady ? L.flashLevel : 0}`);
         this.send(`STRIP ${rgb(L.sessionColor)} ${bri}`);
         break;
@@ -260,6 +283,7 @@ class Lights extends EventEmitter {
       case 'scare':
         // jump scare: room light off, LED strip red, flash device on for the reaction burst
         room(scareOnly);
+        this.neon(L.neonScare);
         this.send(`STRIP ${rgb(L.scareColor)} 255`);
         if (steady) { this.send(`FLASH ${L.flashLevel}`); break; } // stays on through the scare
         {

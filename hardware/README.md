@@ -21,17 +21,22 @@ Use the code in **`hardware/ScareBoothLightsUno/ScareBoothLightsUno.ino`** (not 
 
 ```
 Laptop ──USB (USB-B cable)──► Arduino UNO
-                               D6  ──► 330 Ω resistor ──► ceiling neon strip DATA (input end)
-                               D3  ──► MOSFET module SIG / PWM  (MOSFET OUT ──► white COB flash strip)
-                               D10 ──► relay module IN (optional: a plain on/off light, e.g. a single-colour red neon)
-                               GND ──► Wago ground ◄── 12 V supply (−), MOSFET GND, neon strip GND
-12 V supply (+) ──► MOSFET VIN+   and   ──► neon strip 12V
-1000 µF capacitor across the neon strip's 12V and GND (stripe / − leg to GND)
+                               D9  ──► MOSFET module SIG / PWM (gate)  (MOSFET OUT ──► 24 V white COB light)
+                               D7  ──► 2-channel relay IN1 ──► RGB neon RED wire
+                               D8  ──► 2-channel relay IN2 ──► RGB neon BLUE wire
+                               D4  ──► 1-channel relay IN / S ──► RGB neon GREEN wire
+                               5V  ──► relay boards VCC
+                               GND ──► relay boards GND, MOSFET GND, supply (−)
+RGB neon: common (+) wire ──► 12 V;  each colour wire ──► its relay (relay closes it to GND)
+D6 (addressable strip data) and D10 (extra relay) are optional and can stay unconnected.
 ```
 
-**Pins at a glance:** **D3 = flash** (MOSFET → COB; it was D9 before, change `PIN_FLASH` in the code to move it), **D10 = relay** (on/off light), **D6 = addressable strip data**. Other pins (D7 and so on) do nothing.
+**Pins at a glance:** **D9 = COB light** (PWM brightness), **D7 = neon red**, **D8 = neon blue**, **D4 = neon green**.
 
-For a relay on D10, choose in the console's **Lights** card what it does: **Room light** (on normally, off at the scare) or **Scare light** (on only at the jump scare, e.g. a red neon). If the light is on when it should be off, tick **Relay switches on with LOW**. Many relay boards work that way.
+The RGB neon makes colours by switching red, green and blue on or off: white (all three), warm/yellow (red + green),
+pink (red + blue), cyan (green + blue), or a single colour. In the console's **Lights** card choose the neon colour
+**while waiting**, **during photos** and **at the jump scare** (red by default). If a colour comes on when it should be
+off, untick (or tick) **"… relay switches on with LOW"** for that colour. Most relay boards switch on with LOW.
 
 **Upload the code (once)**
 1. Install the **Arduino IDE** (arduino.cc/en/software).

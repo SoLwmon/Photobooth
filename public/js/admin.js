@@ -411,6 +411,9 @@
     const f = (k.flash || 0) / 255;
     $('#lpFlash i').style.background = f ? `rgba(255,255,255,${0.3 + 0.7 * f})` : '#1a1112';
     $('#lpFlash i').style.boxShadow = f ? '0 0 30px #fff' : 'none';
+    const nn = (k.neon || [0, 0, 0]).map(v => (v ? 255 : 0)), on = nn.some(Boolean);
+    $('#lpNeon i').style.background = on ? `rgb(${nn.join(',')})` : '#1a1112';
+    $('#lpNeon i').style.boxShadow = on ? `0 0 22px rgb(${nn.join(',')})` : 'none';
   }
 
   // ---- WiZ bulb colour choices: whites use the bulb's own white LEDs, colours use the colour LEDs

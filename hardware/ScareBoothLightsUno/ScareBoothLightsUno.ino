@@ -4,10 +4,15 @@
   Same commands as the ESP32 version, so ScareBooth finds and drives it automatically.
 
   Wiring (Arduino UNO / Nano):
-    D6  ──► 330 Ω resistor ──► ceiling neon strip DATA (WS2811/WS2812 "ARGB", input end)
-    D3  ──► MOSFET module SIG/PWM ──► white COB flash strip  (was D9; change PIN_FLASH below to move it)
-    D10 ──► (optional) second MOSFET module for a 12 V room light — leave unconnected if not used
-    GND ──► Wago ground: 12 V supply (−), MOSFET GND, neon strip GND
+    D9  ──► MOSFET module SIG/PWM (gate) ──► 24 V white COB light ("flash")   (PWM, ~31 kHz: no flicker on camera)
+    D7  ──► 2-channel relay IN1 ──► RGB neon RED wire
+    D8  ──► 2-channel relay IN2 ──► RGB neon BLUE wire
+    D4  ──► 1-channel relay IN/S ──► RGB neon GREEN wire
+           (each relay connects its colour wire to GND; the neon's common + goes to 12 V)
+    D6  ──► (optional) 330 Ω ──► addressable WS2811/WS2812 strip DATA — not used with the RGB neon
+    D10 ──► (optional) extra relay / MOSFET for a room light — leave unconnected if not used
+    GND ──► ground of the relay boards and the MOSFET module (and the 12 V / 24 V supply −)
+    5V  ──► VCC of the relay boards
     USB ──► laptop (powers the Uno and carries ScareBooth's commands)
   The Uno sends 5 V signals, so no level shifter is needed.
 
@@ -22,6 +27,8 @@
     PULSE <ms> [0-255]             → OK PULSE … DONE PULSE   (flash on for <ms>, max 10 s)
     STRIP <r> <g> <b> [bri]        → OK STRIP
     BREATHE <r> <g> <b> [ms] [bri] → OK BREATHE     (slow breathing colour)
+    NEON <r> <g> <b>               → OK NEON        (RGB neon colours on the relays: 1 = on, 0 = off)
+    NEONINV <r> <g> <b>            → OK NEONINV     (1 = that relay switches on with LOW; saved)
     OFF                            → OK OFF
   Safety: the flash never stays on longer than 10 s from a PULSE, and if the PC stops talking
   for 60 s the box goes back to a calm look (flash off, strip dim pink).
@@ -34,8 +41,12 @@
 
 // ---------------- pins (change here if you wire differently)
 const uint8_t PIN_STRIP = 6;
-const uint8_t PIN_FLASH = 3;    // flash MOSFET signal. Was 9; moved to 3 (Timer2). Both run at ~31 kHz so a dimmed flash never flickers on camera
-const uint8_t PIN_ROOM  = 10;   // Timer1 pin: ~31 kHz
+const uint8_t PIN_FLASH = 9;    // 24 V COB light MOSFET gate. Timer1 pin: ~31 kHz PWM, so a dimmed light never flickers on camera
+const uint8_t PIN_ROOM  = 10;   // Timer1 pin: ~31 kHz (optional room light)
+const uint8_t PIN_NEON_R = 7;   // 2-channel relay IN1
+const uint8_t PIN_NEON_B = 8;   // 2-channel relay IN2
+const uint8_t PIN_NEON_G = 4;   // 1-channel relay IN / S
+const uint16_t EEPROM_INV = 3;  // 1 byte: neon relay polarity bits (r=1, g=2, b=4), then 1 byte: 0x5A marker
 const uint16_t MAX_LEDS = 300;  // the UNO has 2 KB of memory: 300 sections is plenty for a booth ceiling
 const uint16_t EEPROM_ADDR = 0; // 2 bytes: LED count, then 1 byte: 0xA5 marker
 
@@ -56,6 +67,20 @@ uint16_t pendingLen = 0;          // a new LED count waiting to be applied (when
 char rx[64];
 uint8_t rxLen = 0;
 
+// ---------------------------------------------------------------- RGB neon on relays
+// Most relay boards switch ON when their input is LOW ("low-level trigger"). The polarity of each relay
+// is saved (NEONINV) so the neon stays OFF from the moment the Uno powers up.
+uint8_t neonInv = 0b111;          // default: all three relays are low-level trigger
+uint8_t neonOn = 0;               // which colours are on (r=1, g=2, b=4)
+void writeNeonPin(uint8_t pin, bool on, bool inv) { digitalWrite(pin, (on != inv) ? HIGH : LOW); }
+void setNeon(uint8_t bits) {
+  neonOn = bits & 7;
+  writeNeonPin(PIN_NEON_R, neonOn & 1, neonInv & 1);
+  writeNeonPin(PIN_NEON_G, neonOn & 2, neonInv & 2);
+  writeNeonPin(PIN_NEON_B, neonOn & 4, neonInv & 4);
+}
+void loadNeonInv() { if (EEPROM.read(EEPROM_INV + 1) == 0x5A) neonInv = EEPROM.read(EEPROM_INV) & 7; }
+
 // ---------------------------------------------------------------- outputs
 void setFlash(uint8_t v) { analogWrite(PIN_FLASH, v); }   // 0 = off, 255 = fully on (no PWM at all)
 void setRoom(uint8_t v)  { analogWrite(PIN_ROOM, v); }
@@ -73,7 +98,7 @@ bool lineQuiet() { return !Serial.available() && millis() - lastByteAt >= 4; }
 
 void calmLook() {                 // at power-on, and if the PC goes quiet
   breathing = false; pulsing = false;
-  setFlash(0); setRoom(200);
+  setFlash(0); setRoom(200); setNeon(0);
   stripR = 255; stripG = 120; stripB = 160; stripBri = 60;
   showSolid(stripR, stripG, stripB, stripBri);
 }
@@ -133,9 +158,19 @@ void handle(char* line) {
     breathing = true;
     Serial.println(F("OK BREATHE")); return;
   }
+  if (!strcmp(a[0], "NEON")) {
+    setNeon((ARG(1, 0) ? 1 : 0) | (ARG(2, 0) ? 2 : 0) | (ARG(3, 0) ? 4 : 0));
+    Serial.println(F("OK NEON")); return;
+  }
+  if (!strcmp(a[0], "NEONINV")) {
+    neonInv = (ARG(1, 1) ? 1 : 0) | (ARG(2, 1) ? 2 : 0) | (ARG(3, 1) ? 4 : 0);
+    EEPROM.update(EEPROM_INV, neonInv); EEPROM.update(EEPROM_INV + 1, 0x5A);
+    setNeon(neonOn);
+    Serial.println(F("OK NEONINV")); return;
+  }
   if (!strcmp(a[0], "OFF")) {
     breathing = false; pulsing = false;
-    setFlash(0); setRoom(0); stripBri = 0; showSolid(0, 0, 0, 0);
+    setFlash(0); setRoom(0); setNeon(0); stripBri = 0; showSolid(0, 0, 0, 0);
     Serial.println(F("OK OFF")); return;
   }
   Serial.println(F("ERR unknown command"));
@@ -145,10 +180,13 @@ void handle(char* line) {
 void setup() {
   pinMode(PIN_FLASH, OUTPUT); digitalWrite(PIN_FLASH, LOW);   // flash OFF from the very first moment
   pinMode(PIN_ROOM, OUTPUT);  digitalWrite(PIN_ROOM, LOW);
+  // neon relays: set the "off" level first, then make them outputs, so no relay clicks on at power-up
+  loadNeonInv();
+  setNeon(0);
+  pinMode(PIN_NEON_R, OUTPUT); pinMode(PIN_NEON_G, OUTPUT); pinMode(PIN_NEON_B, OUTPUT);
+  setNeon(0);
   // Timer1 (pins 9 and 10): prescaler 1 → ~31 kHz PWM, far above what a camera or eye can see.
   TCCR1B = (TCCR1B & 0b11111000) | 0x01;
-  // Timer2 (pins 3 and 11): same ~31 kHz for the flash on pin 3.
-  TCCR2B = (TCCR2B & 0b11111000) | 0x01;
 
   Serial.begin(115200);
   loadLedCount();

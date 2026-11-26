@@ -201,7 +201,8 @@
           <div class="light-preview" id="lightPreview">
             <div class="lp" id="lpRoom"><i></i><span>Room light</span></div>
             <div class="lp strip" id="lpStrip"><i></i><span>LED strip</span></div>
-            <div class="lp" id="lpFlash"><i></i><span>Flash</span></div>
+            <div class="lp" id="lpFlash"><i></i><span>COB light</span></div>
+            <div class="lp" id="lpNeon"><i></i><span>RGB neon</span></div>
           </div>
           <div class="actions">
             <button class="btn small" data-light="scare">⚡ Test jump-scare lights</button>
@@ -219,6 +220,14 @@
             <div><label>Jump-scare strip colour</label><input type="color" data-path="lights.scareColor"></div>
             <div><label>LEDs on the strip</label><input type="number" min="1" max="600" step="1" data-path="lights.ledCount"></div>
             <div><label>Strip brightness <output data-for-path="lights.stripBrightness"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.stripBrightness"></div>
+            <div style="grid-column:1/-1"><label>RGB neon <span class="muted small">(relays: red on pin 7, green on pin 4, blue on pin 8 — each colour is on or off)</span></label></div>
+            <div><label>Neon while waiting</label><select data-path="lights.neonIdle"><option value="white">White (red + green + blue)</option><option value="yellow">Warm / yellow (red + green)</option><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="magenta">Pink / magenta (red + blue)</option><option value="cyan">Cyan (green + blue)</option><option value="off">Off</option></select></div>
+            <div><label>Neon during photos</label><select data-path="lights.neonSession"><option value="white">White (red + green + blue)</option><option value="yellow">Warm / yellow (red + green)</option><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="magenta">Pink / magenta (red + blue)</option><option value="cyan">Cyan (green + blue)</option><option value="off">Off</option></select></div>
+            <div><label>Neon at the jump scare</label><select data-path="lights.neonScare"><option value="white">White (red + green + blue)</option><option value="yellow">Warm / yellow (red + green)</option><option value="red">Red</option><option value="green">Green</option><option value="blue">Blue</option><option value="magenta">Pink / magenta (red + blue)</option><option value="cyan">Cyan (green + blue)</option><option value="off">Off</option></select></div>
+            <div><label>Relay type <span class="muted small">(tick if that colour does the opposite: on when it should be off)</span></label>
+              <label class="toggle"><input type="checkbox" data-path="lights.neonInvR"> Red relay switches on with LOW</label>
+              <label class="toggle"><input type="checkbox" data-path="lights.neonInvG"> Green relay switches on with LOW</label>
+              <label class="toggle"><input type="checkbox" data-path="lights.neonInvB"> Blue relay switches on with LOW</label></div>
             <div><label>Pin 10 output (relay)</label><select data-path="lights.relayMode"><option value="room">Room light — on normally, off at the scare</option><option value="scare">Scare light — on only at the jump scare (e.g. red neon)</option></select></div>
             <div><label class="toggle" style="margin-top:26px"><input type="checkbox" data-path="lights.relayInvert"> Relay switches on with LOW (flip if it’s on when it should be off)</label></div>
             <div><label>Room light level <output data-for-path="lights.roomLevel"></output></label><input type="range" min="0" max="255" step="1" data-path="lights.roomLevel"></div>
