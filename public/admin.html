@@ -144,6 +144,21 @@
       <label class="toggle"><input type="checkbox" data-path="sound.useVideoAudio"> Play the scare video’s own audio</label>
       <p class="muted small">Tip: if your scare video already has a scream, set the sting to “None” so they don’t double up.</p>
       <div class="actions"><button class="btn small" data-cmd="testSound">🔊 Test sound on booth</button></div>
+      <hr>
+      <h3 style="margin:6px 0 4px">Background music</h3>
+      <p class="muted small" style="margin-top:0">Plays after the guests press Start, loops if it is short, and stops the moment the jump scare hits.</p>
+      <label class="toggle"><input type="checkbox" data-path="music.enabled"> Play background music</label>
+      <label>Music</label>
+      <select id="musicSelect" data-path="music.track"></select>
+      <label class="btn small ghost filebtn">Upload music… <input type="file" id="musicFile" accept="audio/*,.mp3,.wav,.ogg,.m4a"></label>
+      <label>Music volume <output data-for-path="music.volume"></output> <span class="muted small">(compared with the master volume)</span></label>
+      <input type="range" min="0" max="1" step="0.01" data-path="music.volume">
+      <label>Start the music</label>
+      <select data-path="music.startAt">
+        <option value="start">When guests tap the first Start (plays during the instructions too)</option>
+        <option value="questions">When the questions begin (second Start)</option>
+      </select>
+      <div class="actions"><button class="btn small" data-cmd="testMusic">▶ Play music on booth</button><button class="btn small ghost" data-cmd="stopMusic">■ Stop music</button></div>
     </section>
 
     <!-- TIMING -->

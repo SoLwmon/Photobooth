@@ -155,6 +155,8 @@ const DEFAULT_SETTINGS = {
   version: 1,
   camera: { deviceId: '', label: '', resolution: '1080p', mirrorPreview: true, mirrorSaved: false, demoMode: false, fit: 'cover', portraitLayout: 'window', rotation: 90 },
   sound: { volume: 0.85, useVideoAudio: true, sting: 'builtin' },
+  // background music: starts after Start, loops, stops the moment the scare hits
+  music: { enabled: true, track: 'builtin', volume: 0.35, startAt: 'start' },
   theme: { name: 'romance' },
   // the booth's own questions (saved from the event setup, v12)
   questions: {
@@ -250,6 +252,12 @@ function sanitizeSettings(s) {
     sound: {
       volume: clamp(m.sound.volume, 0, 1, 0.85), useVideoAudio: bool(m.sound.useVideoAudio, true),
       sting: str(m.sound.sting, 300, 'builtin') || 'builtin',
+    },
+    music: {
+      enabled: bool((m.music || {}).enabled, true),
+      track: str((m.music || {}).track, 300, 'builtin') || 'builtin',
+      volume: clamp((m.music || {}).volume, 0, 1, 0.35),
+      startAt: (m.music || {}).startAt === 'questions' ? 'questions' : 'start',
     },
     // five questions in English and Chinese; older settings had four English ones (now questions 2–5)
     questions: (() => {
@@ -1340,19 +1348,21 @@ async function route(req, res) {
     if (!AUDIO_EXT.includes(path.extname(name).toLowerCase())) return json(res, 400, { ok: false, error: 'Use MP3, WAV, OGG or M4A audio.' });
     const final = uniqueName(SOUNDS_DIR, name);
     await fsp.writeFile(path.join(SOUNDS_DIR, final), await readBody(req, 50 * 1024 * 1024));
-    settings.sound.sting = final; saveSettings(); broadcastSettings();
+    if (url.searchParams.get('use') === 'music') settings.music.track = final; else settings.sound.sting = final;
+    saveSettings(); broadcastSettings();
     return json(res, 200, { ok: true, ...settingsPayload() });
   }
   if (p === '/api/sounds' && req.method === 'DELETE') {
     const fp = safeJoin(SOUNDS_DIR, url.searchParams.get('id') || '');
     if (fp && fs.existsSync(fp)) await fsp.unlink(fp);
     if (settings.sound.sting === path.basename(fp || '')) settings.sound.sting = 'builtin';
+    if (settings.music.track === path.basename(fp || '')) settings.music.track = 'builtin';
     saveSettings(); broadcastSettings();
     return json(res, 200, { ok: true, ...settingsPayload() });
   }
   if (p === '/api/admin/command' && req.method === 'POST') {
     const body = await readJson(req);
-    const allowed = ['testScare', 'previewOverlay', 'testSound', 'reloadCamera', 'reloadDisplay', 'testCapture', 'testPrint'];
+    const allowed = ['testScare', 'previewOverlay', 'testSound', 'testMusic', 'stopMusic', 'reloadCamera', 'reloadDisplay', 'testCapture', 'testPrint'];
     if (body.cmd === 'alignPrint') {
       // a strip with 1 mm frames on every edge, to measure how far the printer shifts / crops
       if (settings.print.method !== 'direct') return json(res, 200, { ok: false, error: 'The alignment print needs the “Print directly” method.' });

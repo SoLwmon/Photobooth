@@ -199,7 +199,31 @@
       const s = sounds.find(x => x.id === settings.sound.sting);
       audio.loadSting(s.url).catch(e => logRemote('Sound load failed: ' + e.message));
     }
+    const mu = musicUrl();
+    if (mu) audio.loadMusic(mu).then(() => syncMusic()).catch(e => logRemote('Music load failed: ' + e.message));
+    else audio.stopMusic(0.3);
+    audio.setMusicLevel(settings.music ? settings.music.volume : 0.4);
   }
+
+  // ------------------------------------------------------------------ background music
+  // Starts when the guests press Start (or when the questions begin), loops, and stops the moment the scare hits.
+  let musicDoneFor = null; // the session whose music already ended at the scare (it doesn't come back)
+  function musicUrl() {
+    const m = settings && settings.music;
+    if (!m || !m.enabled || m.track === 'none') return null;
+    if (m.track === 'builtin') return '/assets/music-box-waltz.wav';
+    const s = sounds.find(x => x.id === m.track);
+    return s ? s.url : '/assets/music-box-waltz.wav';
+  }
+  function syncMusic() {
+    const m = settings && settings.music;
+    const from = m && m.startAt === 'questions' ? ['shooting'] : ['intro', 'warning', 'shooting'];
+    const want = !!musicUrl() && from.includes(state.phase) && !(musicDoneFor && musicDoneFor === state.sessionId) && !musicTest;
+    if (want && !audio.musicPlaying) { audio.resume().then(() => { if (audio.playMusic(m.volume)) logRemote('Music started (' + state.phase + ')'); }); }
+    else if (!want && audio.musicPlaying && !musicTest) { audio.stopMusic(0.8); logRemote('Music stopped (' + state.phase + ')'); }
+  }
+  let musicTest = false;
+  function musicAtScare() { musicDoneFor = state.sessionId; musicTest = false; if (audio.musicPlaying) logRemote('Music stopped at the jump scare'); audio.stopMusic(0.06); }
 
   // ------------------------------------------------------------------ UI per phase
   function layerOn(...ids) { for (const el of $$('.layer')) el.classList.toggle('on', ids.includes(el.id)); }
@@ -214,6 +238,8 @@
 
   function onState(s) {
     const prev = state; state = s;
+    if (s.sessionId !== prev.sessionId) musicDoneFor = null;
+    syncMusic();
     document.body.className = document.body.className.replace(/\bphase-\S+/g, '').trim() + ' phase-' + s.phase;
     // English and Chinese together (a session could still ask for just one)
     const lang = s.phase === 'idle' ? 'both' : (s.lang || 'both');
@@ -678,6 +704,7 @@
       const blackMs = t.scareBlackoutMs ?? 0, fl = $('#flash');
       if (blackMs > 0) snapClear();
       if (blackMs > 0) { fl.classList.remove('go', 'shutter'); fl.classList.add('black', 'cut', 'hold'); }
+      musicAtScare(); // the music cuts out the moment the scare hits
       lightCue('scare', { ms: Math.round(blackMs + (t.burstStartMs ?? 300) + t.burstDurationSec * 1000 + (L.scareFlashExtraMs ?? 400)) });
       // the scare starts loading at the same moment the screen goes black, so the black only lasts `blackMs`
       const shown = renderer.show();
@@ -764,6 +791,7 @@
       await audio.resume();
       const t0 = performance.now();
       const L = settings.lights || {};
+      musicTest = false; audio.stopMusic(0.06);
       lightCue('scare', { ms: Math.round(settings.timing.burstDurationSec * 1000 + (L.scareFlashExtraMs ?? 400)) });
       setTimeout(() => lightCue('session'), settings.timing.burstDurationSec * 1000 + (L.revertDelayMs ?? 300));
       const { visibleAt, done } = await renderer.show();
@@ -814,6 +842,14 @@
       case 'print': case 'reprint': runPrint(cmd); break;
       case 'testPrint': runPrint({ ...cmd, stripUrl: cmd.stripUrl || '/assets/test-strip.jpg' }); break;
       case 'testSound': audio.resume().then(() => audio.playSting(stingKind())); break;
+      case 'testMusic': {
+        const mu = musicUrl();
+        if (!mu) { logRemote('Music is off or no track is chosen.'); break; }
+        musicTest = true;
+        audio.resume().then(() => audio.loadMusic(mu)).then(() => audio.playMusic(settings.music.volume)).catch(e => logRemote('Music load failed: ' + e.message));
+        break;
+      }
+      case 'stopMusic': musicTest = false; audio.stopMusic(0.4); syncMusic(); break;
       case 'reloadCamera': startCamera(); break;
       case 'reloadDisplay': location.reload(); break;
       case 'demoted':

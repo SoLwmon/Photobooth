@@ -84,6 +84,11 @@
     sel.innerHTML = `<option value="builtin">Built-in synthesized scream-sting</option><option value="none">None</option>` +
       p.sounds.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
     sel.value = settings.sound.sting;
+    // background music options
+    const ms = $('#musicSelect');
+    ms.innerHTML = `<option value="builtin">Built-in: music-box waltz (loops)</option>` +
+      p.sounds.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+    ms.value = p.sounds.some(s => s.id === settings.music.track) ? settings.music.track : 'builtin';
     renderer.setAudioOptions({ useVideoAudio: settings.sound.useVideoAudio, stingKind: ['builtin', 'none'].includes(settings.sound.sting) ? settings.sound.sting : 'file' });
     audio.setVolume(settings.sound.volume);
     if (!['builtin', 'none'].includes(settings.sound.sting)) { const s = p.sounds.find(x => x.id === settings.sound.sting); if (s) audio.loadSting(s.url).catch(() => {}); }
@@ -170,6 +175,10 @@
       const isGreenGuess = f.type.startsWith('video/') && /\.(mp4|m4v|mov)$/i.test(f.name);
       toast(`Uploaded “${f.name}” and made it the active scare.` + (isGreenGuess ? ' MP4s have no transparency — if it has a green background, turn on Chroma key and press Auto-detect.' : ''), true, 8000);
     } catch (er) { toast(er.message); }
+  });
+  $('#musicFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { onSettings(await uploadFile('/api/sounds?use=music&name=' + encodeURIComponent(f.name), f)); toast('Music uploaded and selected.', true); } catch (er) { toast(er.message); }
   });
   $('#soundFile').addEventListener('change', async (e) => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;

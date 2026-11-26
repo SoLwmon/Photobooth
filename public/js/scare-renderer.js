@@ -135,6 +135,34 @@
       bg.gain.setValueAtTime(0, t); bg.gain.linearRampToValueAtTime(1.0, t + 0.01); bg.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
       b.connect(bg); bg.connect(comp); b.start(t); b.stop(t + 1.1);
     }
+    // ---- background music: loops seamlessly (Web Audio), fades in, can stop instantly at the scare
+    async loadMusic(url) {
+      if (!this.ctx || !url) { this.musicBuffer = null; this.musicUrl = null; return; }
+      if (url === this.musicUrl && this.musicBuffer) return;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Music file not found');
+      const buf = await this.ctx.decodeAudioData(await res.arrayBuffer());
+      this.musicBuffer = buf; this.musicUrl = url;
+      if (this.musicSrc) { const v = this.musicLevel; this.stopMusic(0.3); this.playMusic(v); } // a new track while playing
+    }
+    get musicPlaying() { return !!this.musicSrc; }
+    playMusic(level = 0.4, fadeSec = 0.8) {
+      if (!this.ctx || !this.musicBuffer) return false;
+      this.musicLevel = level;
+      if (this.musicSrc) { this.musicGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.1); return true; }
+      const t = this.ctx.currentTime;
+      const g = this.ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level, t + fadeSec); g.connect(this.master);
+      const s = this.ctx.createBufferSource(); s.buffer = this.musicBuffer; s.loop = true; s.connect(g); s.start(t + 0.02);
+      this.musicSrc = s; this.musicGain = g; return true;
+    }
+    setMusicLevel(level) { this.musicLevel = level; if (this.musicGain) this.musicGain.gain.setTargetAtTime(level, this.ctx.currentTime, 0.1); }
+    stopMusic(fadeSec = 0.6) {
+      if (!this.musicSrc) return;
+      const s = this.musicSrc, g = this.musicGain, t = this.ctx.currentTime;
+      this.musicSrc = null; this.musicGain = null;
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + Math.max(0.02, fadeSec));
+      try { s.stop(t + Math.max(0.02, fadeSec) + 0.05); } catch (_) {}
+    }
     click() {
       if (!this.ctx) return;
       const t = this.ctx.currentTime + 0.002, n = this._noise(0.08), hp = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
