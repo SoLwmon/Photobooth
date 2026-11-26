@@ -161,3 +161,4 @@ body:not(.portrait) #intro .ins-cta { font-size: clamp(14px, 1.2vw, 24px); }
 #intro .steps li { padding-left: 2.6em !important; }
 /* the corner roses sit in front of the instructions card */
 body.phase-intro .florals { z-index: 5; }
+#shotNo { white-space: pre-line; line-height: 1.6; }
