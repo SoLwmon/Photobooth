@@ -42,7 +42,7 @@ if %NODE_MAJOR% LSS 18 (
 )
 
 rem Already running? Then don't start a second server (it would fail: the port is taken).
-powershell -NoProfile -Command "try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 http://127.0.0.1:%PORT%/api/state | Out-Null; exit 0 } catch { if (Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 } }" >nul 2>nul
+powershell -NoProfile -Command "try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 http://localhost:%PORT%/api/state | Out-Null; exit 0 } catch { exit 1 }" >nul 2>nul
 if not errorlevel 1 (
   echo.
   echo   ScareBooth is already running ^(another server window is open^).
@@ -54,7 +54,7 @@ if not errorlevel 1 (
 )
 
 rem Open the browsers once the server is answering (runs in the background).
-start "" /min powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "%~dp0scripts\launch-browsers.ps1" -Port %PORT%
+start "" /min powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\launch-browsers.ps1" -Port %PORT%
 
 node "%~dp0server\server.js"
 
